@@ -6,22 +6,39 @@ let currentTurnSid = '';
 let previousTurnSid = null;
 let hostSid = '';
 
-// --- Formulaire dynamique ---
-function autoFillSettings() {
-    const j = parseInt(document.getElementById('nbJoueurs').value);
-    const gentils = Math.ceil(j / 2) + 1;
-    const mechants = Math.floor(j / 2);
-    
-    document.getElementById('gentils').value = gentils;
-    document.getElementById('mechants').value = mechants;
-    document.getElementById('interrupteurs').value = j;
-    
-    document.getElementById('infoGentils').innerText = gentils;
-    document.getElementById('infoMechants').innerText = mechants;
-    document.getElementById('infoInterrupteurs').innerText = j;
+// --- Navigation du Menu ---
+function showSettingsMenu() {
+    if(!document.getElementById('playerName').value) return showToast("Mets d'abord un pseudo !");
+    document.getElementById('initial-menu').style.display = 'none';
+    document.getElementById('creation-settings').style.display = 'block';
+    syncFromTotal(); // Initialise les bonnes valeurs par défaut
 }
 
-// --- Système de Notifications (remplace alert) ---
+function hideSettingsMenu() {
+    document.getElementById('creation-settings').style.display = 'none';
+    document.getElementById('initial-menu').style.display = 'block';
+}
+
+// --- Logique mathématique des rôles ---
+function syncFromTotal() {
+    const total = parseInt(document.getElementById('nbJoueurs').value);
+    document.getElementById('mechants').value = 1;
+    document.getElementById('gentils').value = total - 1;
+    document.getElementById('interrupteurs').value = total;
+}
+
+function syncFromRoles(changedRole) {
+    const total = parseInt(document.getElementById('nbJoueurs').value);
+    const g = parseInt(document.getElementById('gentils').value);
+    const m = parseInt(document.getElementById('mechants').value);
+    
+    if (changedRole === 'gentils') {
+        document.getElementById('mechants').value = total - g;
+    } else if (changedRole === 'mechants') {
+        document.getElementById('gentils').value = total - m;
+    }
+}
+
 function showToast(msg) {
     const toast = document.getElementById('toast-msg');
     toast.innerText = msg;
@@ -29,38 +46,36 @@ function showToast(msg) {
     setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-// --- Lancement / Menu ---
+// --- Serveur ---
 function createGame() {
-    autoFillSettings(); // Sécurité
     const data = {
         playerName: document.getElementById('playerName').value,
         gentils: document.getElementById('gentils').value,
         mechants: document.getElementById('mechants').value,
         interrupteurs: document.getElementById('interrupteurs').value
     };
-    if(data.playerName) socket.emit('create_game', data);
+    socket.emit('create_game', data);
 }
 
 function joinGame() {
     const room = document.getElementById('roomCodeInput').value;
     const name = document.getElementById('playerName').value;
     if(name && room) socket.emit('join_game', { room: room, playerName: name });
+    else showToast("Pseudo et Code requis !");
 }
 
-function startGame() { 
-    socket.emit('start_game', { room: currentRoom }); 
-}
+function startGame() { socket.emit('start_game', { room: currentRoom }); }
 
 socket.on('game_created', (data) => {
     currentRoom = data.room;
-    document.getElementById('creation-form').style.display = 'none';
+    document.getElementById('creation-settings').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
 });
 
 socket.on('joined_success', (data) => {
     currentRoom = data.room;
-    document.getElementById('creation-form').style.display = 'none';
+    document.getElementById('initial-menu').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
 });
@@ -78,7 +93,7 @@ socket.on('update_lobby', (data) => {
     if (socket.id === hostSid) {
         document.getElementById('startBtn').style.display = 'block';
         document.getElementById('waitingMessage').style.display = 'none';
-        document.getElementById('btn-replay').style.display = 'inline-block'; // Bouton fin de jeu
+        document.getElementById('btn-replay').style.display = 'inline-block';
     }
 });
 
@@ -101,11 +116,9 @@ socket.on('game_started', (data) => {
     renderBoard(data.my_cards);
 });
 
-// --- Affichage Visuel ---
 function updateTurnDisplay(turnSid, turnName, prevSid) {
     currentTurnSid = turnSid;
     previousTurnSid = prevSid;
-    
     const indicator = document.getElementById('turnIndicator');
     if (turnSid === socket.id) {
         indicator.innerText = "C'est à TOI de jouer !";
@@ -115,12 +128,9 @@ function updateTurnDisplay(turnSid, turnName, prevSid) {
         indicator.className = "";
     }
     
-    // Mise à jour des points rouges/verts
     for (const sid of Object.keys(globalPlayers)) {
         const dot = document.getElementById(`dot-${sid}`);
         if (!dot) continue;
-        
-        // Impossible de piocher chez le joueur actuel OU chez le précédent (si > 2 joueurs)
         if (sid === currentTurnSid || (sid === previousTurnSid && Object.keys(globalPlayers).length > 2)) {
             dot.className = "status-dot dot-red";
         } else {
@@ -132,16 +142,12 @@ function updateTurnDisplay(turnSid, turnName, prevSid) {
 function renderCenterSlots(found, bombExploded) {
     const container = document.getElementById('slots-container');
     container.innerHTML = '';
-    
-    // Ajout des cases pour les câbles
     for(let i = 0; i < totalCablesNeeded; i++) {
         let slot = document.createElement('div');
         slot.className = 'mini-slot ' + (i < found ? 'filled-cable' : 'empty-cable');
         if (i < found) slot.innerHTML = '✅';
         container.appendChild(slot);
     }
-    
-    // Ajout de la case Bombe
     let bombSlot = document.createElement('div');
     bombSlot.className = 'mini-slot ' + (bombExploded ? 'filled-bomb' : 'empty-bomb');
     bombSlot.innerHTML = '💣';
@@ -154,7 +160,6 @@ function renderBoard(myCardsData) {
 
     for (const [sid, name] of Object.entries(globalPlayers)) {
         let isMe = (sid === socket.id);
-        
         let mat = document.createElement('div');
         mat.className = 'player-mat';
         mat.innerHTML = `
@@ -180,18 +185,32 @@ function renderBoard(myCardsData) {
             cardsContainer.appendChild(wrapper);
         }
     }
-    // Forcer la maj des couleurs des points
     updateTurnDisplay(currentTurnSid, globalPlayers[currentTurnSid], previousTurnSid);
 }
 
-// --- Réceptions d'actions ---
 socket.on('card_revealed', (data) => {
     const cardEl = document.getElementById(`card-${data.target_sid}-${data.card_index}`);
     const backEl = document.getElementById(`back-${data.target_sid}-${data.card_index}`);
     
-    if(data.card_type === 'Bombe') backEl.innerHTML = '💣<br>BOMBE';
-    else if(data.card_type === 'Interrupteur') backEl.innerHTML = '✅<br>OK';
-    else backEl.innerHTML = 'Neutre';
+    // Design dynamique des câbles
+    if(data.card_type === 'Bombe') {
+        backEl.innerHTML = '💣';
+    } else if(data.card_type === 'Interrupteur') {
+        backEl.innerHTML = `
+            <div class="cable-art">
+                <div class="cable-line"></div>
+                <div class="cable-line green"></div>
+                <div class="cable-line"></div>
+            </div>`;
+        cardEl.classList.add('halo-anim'); // Lance le halo de lumière
+    } else {
+        backEl.innerHTML = `
+            <div class="cable-art">
+                <div class="cable-line"></div>
+                <div class="cable-line"></div>
+                <div class="cable-line"></div>
+            </div>`;
+    }
 
     backEl.className = 'card-face card-back ' + data.card_type;
     cardEl.classList.add('flipped');
@@ -204,8 +223,6 @@ socket.on('new_round_data', (data) => {
     const indicator = document.getElementById('turnIndicator');
     indicator.innerText = "Nouvelle manche !";
     indicator.className = "";
-    
-    // On efface les points le temps de l'animation
     document.querySelectorAll('.status-dot').forEach(el => el.style.display = 'none');
 
     setTimeout(() => {
@@ -214,7 +231,6 @@ socket.on('new_round_data', (data) => {
     }, 3000);
 });
 
-// --- Fin de partie et erreurs ---
 socket.on('game_over', (data) => {
     setTimeout(() => {
         const goScreen = document.getElementById('game-over-screen');

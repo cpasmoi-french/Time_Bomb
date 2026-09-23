@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Time Bomb - Online</title>
+    <title>MLR TB - Online</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <!-- Notifications (Toasts) et Animations -->
     <div id="toast-msg" class="hidden"></div>
     <div id="explosion-overlay"></div>
 
-    <!-- Écran de Fin de Partie -->
     <div id="game-over-screen" class="hidden">
         <h1 id="go-title">Victoire !</h1>
         <p id="go-desc">Raison</p>
@@ -24,34 +22,41 @@
     </div>
 
     <div id="menu-container">
-        <h1>💣 Désamorçage</h1>
+        <h1>MLR 💣 TB</h1>
         
-        <div id="creation-form" class="panel">
+        <!-- Étape 1 : Choix simple -->
+        <div id="initial-menu" class="panel">
             <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
-            
-            <h3>Créer une partie</h3>
-            <div class="settings">
-                <label>Nombre de joueurs (Total) : 
-                    <input type="number" id="nbJoueurs" value="5" min="4" max="8" onchange="autoFillSettings()">
-                </label>
-                <div class="small-info">
-                    <span id="infoGentils">3</span> Gentils | <span id="infoMechants">2</span> Méchants | <span id="infoInterrupteurs">5</span> Câbles
-                </div>
-                <!-- Inputs cachés envoyés au serveur -->
-                <input type="hidden" id="gentils" value="3">
-                <input type="hidden" id="mechants" value="2">
-                <input type="hidden" id="interrupteurs" value="5">
-            </div>
-            <button onclick="createGame()">Créer la partie</button>
-            
+            <button onclick="showSettingsMenu()">Créer une partie</button>
             <hr>
-            <h3>Ou rejoindre</h3>
             <input type="text" id="roomCodeInput" placeholder="Code de la partie">
             <button onclick="joinGame()" class="btn-alt">Rejoindre</button>
         </div>
 
+        <!-- Étape 2 : Paramètres de création -->
+        <div id="creation-settings" class="panel" style="display:none;">
+            <h3>Paramètres de la partie</h3>
+            <div class="settings">
+                <label>Total Joueurs : 
+                    <input type="number" id="nbJoueurs" value="5" min="4" max="8" onchange="syncFromTotal()">
+                </label>
+                <label>Gentils : 
+                    <input type="number" id="gentils" value="4" min="1" max="7" onchange="syncFromRoles('gentils')">
+                </label>
+                <label>Méchants : 
+                    <input type="number" id="mechants" value="1" min="1" max="7" onchange="syncFromRoles('mechants')">
+                </label>
+                <label>Câbles à trouver : 
+                    <input type="number" id="interrupteurs" value="5" min="1" max="10">
+                </label>
+            </div>
+            <button onclick="createGame()">Valider et Créer</button>
+            <button onclick="hideSettingsMenu()" class="btn-alt">Retour</button>
+        </div>
+
+        <!-- Étape 3 : Salle d'attente (Lobby) -->
         <div id="lobby" class="panel" style="display:none;">
-            <h2>Code de la partie : <span id="displayRoomCode" class="highlight"></span></h2>
+            <h2>Code : <span id="displayRoomCode" class="highlight"></span></h2>
             <h3>Joueurs connectés :</h3>
             <ul id="playersList"></ul>
             <p id="waitingMessage">En attente de l'hôte pour lancer...</p>
@@ -65,9 +70,7 @@
             <div id="slots-container"></div>
             <div id="turnIndicator">...</div>
         </div>
-
         <div id="players-area"></div>
-
         <div id="role-card-container" onclick="this.classList.toggle('active')">
             <div class="role-inner">
                 <div class="role-front">Ton Rôle</div>

@@ -27,19 +27,16 @@ def start_round(room):
     game['cards_revealed_this_round'] = 0
     cards_per_player = 5 - (game['round'] - 1)
     
-    # Réinitialisation des bulles d'annonce pour la manche
     game['announcements'] = {}
     
     for i, sid in enumerate(game['players'].keys()):
         player_cards = deck[i*cards_per_player : (i+1)*cards_per_player]
         game['cards'][sid] = [{'type': card, 'revealed': False} for card in player_cards]
     
-    # Gestion des annonces
     if game['settings'].get('annonces'):
         game['phase'] = 'announcing'
         players_sids = list(game['players'].keys())
         idx = players_sids.index(game['turn'])
-        # L'ordre commence par celui qui joue, puis fait le tour
         game['announce_order'] = players_sids[idx:] + players_sids[:idx]
         game['announce_turn'] = game['announce_order'][0]
     else:
@@ -53,12 +50,9 @@ def index():
 def on_create(data):
     room = generate_room_code()
     games[room] = {
-        'host': request.sid,
-        'players': {request.sid: data['playerName']},
-        'settings': data,
-        'cards': {}, 'roles': {}, 'announcements': {},
-        'turn': None, 'previous_turn': None,
-        'state': 'lobby', 'round': 1, 'phase': 'lobby',
+        'host': request.sid, 'players': {request.sid: data['playerName']},
+        'settings': data, 'cards': {}, 'roles': {}, 'announcements': {},
+        'turn': None, 'previous_turn': None, 'state': 'lobby', 'round': 1, 'phase': 'lobby',
         'cables_found': 0, 'cables_needed': int(data['interrupteurs'])
     }
     join_room(room)
@@ -101,16 +95,11 @@ def on_start(data):
     
     for sid in players_sids:
         emit('game_started', {
-            'role': game['roles'][sid],
-            'my_cards': game['cards'][sid],
-            'all_players': game['players'],
-            'phase': game['phase'],
-            'announce_turn_sid': game.get('announce_turn'),
+            'role': game['roles'][sid], 'my_cards': game['cards'][sid], 'all_players': game['players'],
+            'phase': game['phase'], 'announce_turn_sid': game.get('announce_turn'),
             'announce_turn_name': game['players'].get(game.get('announce_turn', '')),
-            'turn_name': game['players'][game['turn']],
-            'turn_sid': game['turn'],
-            'previous_turn': None,
-            'cables_needed': game['cables_needed']
+            'turn_name': game['players'][game['turn']], 'turn_sid': game['turn'],
+            'previous_turn': None, 'cables_needed': game['cables_needed']
         }, to=sid)
 
 @socketio.on('make_announcement')
@@ -121,7 +110,6 @@ def on_make_announcement(data):
     
     msg = f"{data['cables']} ✅ | {'💣 Oui' if data['bomb'] else 'Aucune 💣'}"
     game['announcements'][request.sid] = msg
-    
     emit('player_announced', {'sid': request.sid, 'msg': msg}, to=room)
     
     game['announce_order'].pop(0)
@@ -145,8 +133,8 @@ def on_reveal(data):
     card_index = data['card_index']
     
     if request.sid != game['turn']: return emit('error', {'msg': "Pas ton tour !"}, to=request.sid)
-    if target_sid == request.sid: return emit('error', {'msg': "Pas chez toi-même !"}, to=request.sid)
-    if target_sid == game['previous_turn'] and len(game['players']) > 2: return emit('error', {'msg': "Pas chez lui !"}, to=request.sid)
+    if target_sid == request.sid: return emit('error', {'msg': "Pas chez toi !"}, to=request.sid)
+    if target_sid == game['previous_turn'] and len(game['players']) > 2: return emit('error', {'msg': "Interdit de piocher chez lui !"}, to=request.sid)
 
     card = game['cards'][target_sid][card_index]
     if card['revealed']: return
@@ -155,8 +143,6 @@ def on_reveal(data):
     game['cards_revealed_this_round'] += 1
     game['previous_turn'] = request.sid
     game['turn'] = target_sid
-    
-    # On cache la bulle d'annonce de la carte révélée (optionnel)
     
     if card['type'] == 'Interrupteur': game['cables_found'] += 1
 
@@ -181,20 +167,16 @@ def on_reveal(data):
             start_round(room)
             for sid in game['players'].keys():
                 emit('new_round_data', {
-                    'my_cards': game['cards'][sid], 'round': game['round'], 
-                    'phase': game['phase'],
-                    'announce_turn_sid': game.get('announce_turn'),
-                    'announce_turn_name': game['players'].get(game.get('announce_turn', '')),
-                    'turn_name': game['players'][game['turn']], 'turn_sid': game['turn'], 
-                    'previous_turn': game['previous_turn']
+                    'my_cards': game['cards'][sid], 'round': game['round'], 'phase': game['phase'],
+                    'announce_turn_sid': game.get('announce_turn'), 'announce_turn_name': game['players'].get(game.get('announce_turn', '')),
+                    'turn_name': game['players'][game['turn']], 'turn_sid': game['turn'], 'previous_turn': game['previous_turn']
                 }, to=sid)
 
 @socketio.on('chat_message')
 def on_chat_message(data):
     room = data['room']
     game = games.get(room)
-    if game:
-        emit('chat_message', {'sender': game['players'].get(request.sid, "Joueur"), 'msg': data['msg']}, to=room)
+    if game: emit('chat_message', {'sender': game['players'].get(request.sid, "Joueur"), 'msg': data['msg']}, to=room)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

@@ -25,12 +25,12 @@
     <!-- Modale d'Annonce -->
     <div id="announcement-modal" class="hidden">
         <h2>Fais ton Annonce !</h2>
-        <label>Combien de câbles (✅) as-tu ?
+        <label>Combien de câbles de désamorçage (✅) as-tu ?
             <input type="number" id="announce-cables" value="0" min="0" max="5">
         </label><br>
-        <label style="cursor:pointer;">
+        <label style="cursor:pointer; display:block; margin:15px 0;">
             <input type="checkbox" id="announce-bomb"> J'ai la Bombe (💣)
-        </label><br>
+        </label>
         <button onclick="submitAnnouncement()">Annoncer à tous</button>
     </div>
 
@@ -72,11 +72,9 @@
         </div>
     </div>
 
-    <!-- Plateau de jeu (Grid par défaut) -->
-    <div id="game-board" style="display:none;">
+    <!-- Plateau de jeu : Initialisé en Mode Grille -->
+    <div id="game-board" class="layout-grid" style="display:none;">
         <button id="layout-toggle" onclick="toggleLayout()">Mode Table 🎲</button>
-        
-        <div id="opponents-area"></div>
         
         <div id="center-table">
             <div id="bomb-slot-container"></div>
@@ -84,9 +82,10 @@
             <div id="slots-container"></div>
             <div id="turnIndicator">...</div>
         </div>
-        
-        <div id="my-area"></div>
 
+        <div id="my-area"></div>
+        <div id="opponents-area"></div>
+        
         <div id="role-card-container" onclick="this.classList.toggle('active')">
             <div class="role-inner">
                 <div class="role-front">Ton Rôle</div>

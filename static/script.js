@@ -6,22 +6,67 @@ let currentTurnSid = '';
 let previousTurnSid = null;
 let hostSid = '';
 let canPlay = false; 
+let isBoardLayout = false; // Mode Grille par défaut
 
-// --- Bouton Layout ---
-let isBoardLayout = false;
+// --- Layout Table Dynamique ---
 function toggleLayout() {
     isBoardLayout = !isBoardLayout;
     const btn = document.getElementById('layout-toggle');
     const board = document.getElementById('game-board');
     if(isBoardLayout) {
         btn.innerText = "Mode Grille 📱";
+        board.classList.remove('layout-grid');
         board.classList.add('layout-board');
     } else {
         btn.innerText = "Mode Table 🎲";
         board.classList.remove('layout-board');
+        board.classList.add('layout-grid');
+    }
+    updateTableLayout();
+}
+
+function updateTableLayout() {
+    const oppMats = document.querySelectorAll('#opponents-area .player-mat');
+    if(!isBoardLayout) {
+        // Enlève le positionnement absolu pour le mode Grille
+        oppMats.forEach(el => {
+            el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = '';
+        });
+        return;
+    }
+    // Mathématiques pour placer les adversaires en Arc autour de la table
+    const N = oppMats.length;
+    if(N === 0) return;
+    
+    // Rayon d'éloignement selon la taille de l'écran
+    const rx = Math.min(window.innerWidth * 0.4, 400); 
+    const ry = Math.min(window.innerHeight * 0.35, 300);
+    
+    // On répartit entre la gauche (Math.PI) et la droite (0), en passant par le haut
+    let startAngle = Math.PI;
+    let endAngle = 0;
+    
+    // Si beaucoup de joueurs, on élargit un peu l'arc
+    if (N > 3) { startAngle = Math.PI * 1.1; endAngle = -Math.PI * 0.1; }
+
+    for (let i = 0; i < N; i++) {
+        let f = (N === 1) ? 0.5 : i / (N - 1);
+        let angle = startAngle + f * (endAngle - startAngle);
+        let x = Math.cos(angle) * rx;
+        let y = Math.sin(angle) * ry;
+
+        let el = oppMats[i];
+        el.style.position = 'absolute';
+        el.style.left = `calc(50% + ${x}px)`;
+        // -5% pour légèrement remonter le centre de l'arc
+        el.style.top = `calc(45% + ${y}px)`;
+        el.style.transform = 'translate(-50%, -50%)';
     }
 }
 
+window.addEventListener('resize', () => { if(isBoardLayout) updateTableLayout(); });
+
+// --- Helpers ---
 function getCardHTML(type) {
     if(type === 'Bombe') return '💣';
     if(type === 'Interrupteur') return `<div class="cable-art"><div class="cable-line"></div><div class="cable-line green"></div><div class="cable-line"></div></div>`;
@@ -150,8 +195,6 @@ socket.on('game_started', (data) => {
 function startRoundAnimation(data) {
     canPlay = false;
     document.getElementById('turnIndicator').innerText = "Mémorise tes cartes !";
-    
-    // Cache toutes les bulles d'annonce
     document.querySelectorAll('.speech-bubble').forEach(b => b.classList.add('hidden'));
 
     renderBoard(data.my_cards, true); 
@@ -195,7 +238,6 @@ socket.on('player_announced', (data) => {
         bubble.classList.remove('hidden');
     }
 });
-
 socket.on('announcements_done', (data) => {
     canPlay = true;
     updateTurnDisplay(data.turn_sid, data.turn_name, previousTurnSid);
@@ -253,7 +295,7 @@ function renderBoard(myCardsData, isInitialReveal = false) {
     for (const [sid, name] of Object.entries(globalPlayers)) {
         let isMe = (sid === socket.id);
         let mat = document.createElement('div');
-        mat.className = 'player-mat';
+        mat.className = 'player-mat' + (isMe ? ' my-mat' : '');
         mat.innerHTML = `
             <div class="speech-bubble hidden" id="bubble-${sid}"></div>
             <div class="status-dot dot-green" id="dot-${sid}"></div>
@@ -285,6 +327,7 @@ function renderBoard(myCardsData, isInitialReveal = false) {
             cardsContainer.appendChild(wrapper);
         }
     }
+    updateTableLayout();
     if (!isInitialReveal) updateTurnDisplay(currentTurnSid, globalPlayers[currentTurnSid], previousTurnSid);
 }
 
@@ -297,7 +340,6 @@ socket.on('card_revealed', (data) => {
     if(data.card_type === 'Interrupteur') cardEl.classList.add('halo-anim');
     cardEl.classList.add('flipped');
     
-    // Optionnel: Cacher la bulle du joueur quand on pioche chez lui
     const bubble = document.getElementById(`bubble-${data.target_sid}`);
     if (bubble) bubble.classList.add('hidden');
     
@@ -312,9 +354,7 @@ socket.on('new_round_data', (data) => {
     indicator.className = "";
     document.querySelectorAll('.status-dot').forEach(el => el.style.display = 'none');
 
-    setTimeout(() => {
-        startRoundAnimation(data);
-    }, 3000);
+    setTimeout(() => { startRoundAnimation(data); }, 3000);
 });
 
 socket.on('game_over', (data) => {
@@ -333,7 +373,6 @@ socket.on('game_over', (data) => {
         }
     }, 1000);
 });
-
 socket.on('error', (data) => showToast(data.msg));
 
 // --- Chat ---

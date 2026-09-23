@@ -1,46 +1,90 @@
 body {
-    background-color: #2c3e50;
+    background: radial-gradient(circle at center, #2c3e50, #1a252f);
     color: white;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
+    margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden;
 }
 
-#menu-container { margin-top: 50px; }
-input, button { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
-button { background-color: #e74c3c; color: white; cursor: pointer; font-weight: bold; }
-button:hover { background-color: #c0392b; }
+h1 { margin-top: 30px; font-size: 2.5em; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+.panel { background: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; margin: 0 auto; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+.settings label { display: block; margin: 10px 0; }
+input, button { padding: 10px; border-radius: 8px; border: none; font-size: 1.1em; width: 80%; margin: 5px 0; }
+button { background-color: #e74c3c; color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
+button:hover { background-color: #c0392b; transform: scale(1.05); }
+.btn-alt { background-color: #3498db; }
+.btn-alt:hover { background-color: #2980b9; }
+.highlight { color: #f1c40f; font-size: 1.5em; letter-spacing: 2px; }
+ul { list-style: none; padding: 0; font-size: 1.2em; }
 
-#game-board { padding: 20px; }
-#info-bar { background: #34495e; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.2em; }
+/* Table Centrale */
+#center-table {
+    background: radial-gradient(circle, #27ae60, #1e8449);
+    border: 8px solid #8d6e63; border-radius: 50%;
+    width: 250px; height: 250px; margin: 20px auto;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5);
+}
+#center-table h2 { margin: 5px 0; font-size: 1.2em; color: #ecf0f1; }
+#cable-counter { font-size: 2.5em; font-weight: bold; color: #f1c40f; text-shadow: 1px 1px 3px black; }
+#turnIndicator { margin-top: 10px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; }
 
-#players-area { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 20px; }
-.player-mat { background: #1a252f; padding: 15px; border-radius: 10px; width: 30%; }
+/* Zone joueurs */
+#players-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; padding-bottom: 120px; }
+.player-mat { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; min-width: 250px; }
+.player-mat h3 { margin-top: 0; color: #3498db; }
+.cards-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 
-.cards-container { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-
-/* Animation des cartes */
+/* Animations Cartes */
 .card-wrapper {
-    width: 60px; height: 90px;
-    perspective: 1000px;
-    cursor: pointer;
+    width: 60px; height: 90px; perspective: 1000px; cursor: pointer;
+    /* Animation de distribution */
+    animation: deal-anim 0.6s ease-out backwards;
 }
-.card {
-    width: 100%; height: 100%;
-    position: relative;
-    transition: transform 0.6s;
-    transform-style: preserve-3d;
+/* Décalage pour que les cartes n'arrivent pas toutes en même temps */
+.card-wrapper:nth-child(1) { animation-delay: 0.1s; }
+.card-wrapper:nth-child(2) { animation-delay: 0.2s; }
+.card-wrapper:nth-child(3) { animation-delay: 0.3s; }
+.card-wrapper:nth-child(4) { animation-delay: 0.4s; }
+.card-wrapper:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes deal-anim {
+    0% { transform: scale(0) rotate(720deg) translateY(-200px); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg) translateY(0); opacity: 1; }
 }
+
+.card { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; }
 .card.flipped { transform: rotateY(180deg); }
+.card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
+.card-front { background: repeating-linear-gradient(45deg, #34495e, #34495e 10px, #2c3e50 10px, #2c3e50 20px); border: 2px solid white; color: white; }
+.card-back { transform: rotateY(180deg); border: 2px solid #fff; }
 
-.card-face {
-    position: absolute; width: 100%; height: 100%;
-    backface-visibility: hidden;
-    border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold;
-}
-.card-front { background: #7f8c8d; border: 2px solid white; } /* Dos de la carte */
-.card-back { background: #ecf0f1; color: black; transform: rotateY(180deg); border: 2px solid #2c3e50; }
-
-/* Styles spécifiques selon la carte */
-.card-back.Bombe { background: #e74c3c; color: white; }
+.card-back.Bombe { background: #e74c3c; color: white; font-size: 1.2em; text-shadow: 0 0 5px black; }
 .card-back.Interrupteur { background: #2ecc71; color: white; }
 .card-back.Neutre { background: #95a5a6; color: white; }
+
+/* Carte Rôle (Coin inférieur droit) */
+#role-card-container {
+    position: fixed; bottom: 20px; right: 20px; width: 80px; height: 120px;
+    perspective: 1000px; z-index: 100; cursor: pointer;
+}
+.role-inner { width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+#role-card-container:hover .role-inner, #role-card-container.active .role-inner { transform: rotateY(180deg); }
+.role-front, .role-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; border: 2px solid gold; box-shadow: 0 5px 15px rgba(0,0,0,0.7); }
+.role-front { background: #111; color: gold; font-size: 0.9em; }
+.role-back { transform: rotateY(180deg); color: white; font-size: 1.1em; }
+.role-back.Gentil { background: #3498db; } /* Bleu Sherlock */
+.role-back.Méchant { background: #e74c3c; } /* Rouge Moriarty */
+
+/* Animation Explosion */
+#explosion-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: radial-gradient(circle at center, #fff, #ffeb3b, #f44336, #000);
+    z-index: 9999; display: none; opacity: 0;
+}
+.explode-anim { animation: explode 1.5s forwards; display: block !important; }
+@keyframes explode {
+    0% { transform: scale(0.1); opacity: 0.8; }
+    50% { transform: scale(1.5); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+}

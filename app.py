@@ -28,6 +28,7 @@ init_db()
 def index():
     return render_template('index.html')
 
+# --- GESTION DU COMPTE ET DES COOKIES ---
 @app.route('/api/auth', methods=['POST'])
 def auth():
     data = request.json
@@ -38,20 +39,37 @@ def auth():
         user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
         if user:
             if check_password_hash(user['password'], password):
+                session['username'] = username # Sauvegarde dans le cookie
                 return jsonify({'success': True, 'points': user['points'], 'skins': user['skins'].split(','), 'equipped': user['equipped']})
             return jsonify({'success': False, 'msg': 'Mot de passe incorrect.'})
         else:
             conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, generate_password_hash(password)))
             conn.commit()
+            session['username'] = username # Sauvegarde dans le cookie
             return jsonify({'success': True, 'points': 0, 'skins': ['default'], 'equipped': 'default', 'msg': 'Compte créé avec succès !'})
 
+@app.route('/api/session', methods=['GET'])
+def get_session():
+    if 'username' in session:
+        username = session['username']
+        with get_db() as conn:
+            user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+            if user:
+                return jsonify({'logged_in': True, 'username': username, 'points': user['points'], 'skins': user['skins'].split(','), 'equipped': user['equipped']})
+    return jsonify({'logged_in': False})
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    session.pop('username', None)
+    return jsonify({'success': True})
+
+# --- BOUTIQUE ---
 @app.route('/api/shop/buy', methods=['POST'])
 def buy_skin():
     data = request.json
     username = data.get('username')
     skin_id = data.get('skin_id')
     price = data.get('price')
-    
     with get_db() as conn:
         user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
         if user and user['points'] >= price:
@@ -72,6 +90,7 @@ def equip_skin():
         conn.commit()
     return jsonify({'success': True})
 
+# --- LOGIQUE DU JEU ---
 games = {}
 
 def get_user_skin(username):

@@ -18,39 +18,76 @@ const ALL_SKINS = [
     { id: 'skin-50', name: 'Or Stellaire', price: 50 }
 ];
 
+// --- CHARGEMENT DE SESSION ---
+window.onload = async () => {
+    const res = await fetch('/api/session');
+    const data = await res.json();
+    if(data.logged_in) {
+        user = { username: data.username, points: data.points, skins: data.skins, equipped: data.equipped };
+        document.getElementById('user-info').innerHTML = `👤 <strong>${user.username}</strong> | 🏆 ${data.points} pts`;
+        document.getElementById('btn-shop').classList.remove('hidden');
+        
+        // Affichage connecté dans le menu
+        document.getElementById('login-fields').classList.add('hidden');
+        document.getElementById('logged-in-info').classList.remove('hidden');
+        document.getElementById('logged-in-name').innerText = user.username;
+    }
+};
+
 // --- RÈGLES ---
 function showRules() { document.getElementById('rules-modal').classList.remove('hidden'); }
 function hideRules() { document.getElementById('rules-modal').classList.add('hidden'); }
 
 // --- AUTH & BOUTIQUE ---
 async function handleLoginAndProceed(action) {
-    const name = document.getElementById('playerName').value.trim();
-    const pwd = document.getElementById('playerPassword').value;
-    
-    if(!name) return showToast("Pseudo obligatoire !");
-    
-    if(pwd) {
-        const res = await fetch('/api/auth', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: name, password: pwd})
-        });
-        const data = await res.json();
-        
-        if(data.success) {
-            user = { username: name, points: data.points, skins: data.skins, equipped: data.equipped };
-            document.getElementById('user-info').innerHTML = `👤 <strong>${name}</strong> | 🏆 ${data.points} pts`;
-            document.getElementById('btn-shop').classList.remove('hidden');
-            if(data.msg) showToast(data.msg);
-        } else {
-            return showToast(data.msg);
-        }
+    if(document.getElementById('login-fields').classList.contains('hidden')) {
+        // Déjà connecté via session
     } else {
-        user.username = name;
-        document.getElementById('user-info').innerText = `👤 ${name} (Invité)`;
+        const name = document.getElementById('playerName').value.trim();
+        const pwd = document.getElementById('playerPassword').value;
+        
+        if(!name) return showToast("Pseudo obligatoire !");
+        
+        if(pwd) {
+            const res = await fetch('/api/auth', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: name, password: pwd})
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                user = { username: name, points: data.points, skins: data.skins, equipped: data.equipped };
+                document.getElementById('user-info').innerHTML = `👤 <strong>${name}</strong> | 🏆 ${data.points} pts`;
+                document.getElementById('btn-shop').classList.remove('hidden');
+                
+                document.getElementById('login-fields').classList.add('hidden');
+                document.getElementById('logged-in-info').classList.remove('hidden');
+                document.getElementById('logged-in-name').innerText = name;
+                if(data.msg) showToast(data.msg);
+            } else {
+                return showToast(data.msg);
+            }
+        } else {
+            user.username = name;
+            document.getElementById('user-info').innerText = `👤 ${name} (Invité)`;
+        }
     }
 
     if(action === 'host') showSettingsMenu();
     else if(action === 'join') joinGame();
+}
+
+async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    user = { username: null, points: 0, skins: ['default'], equipped: 'default' };
+    
+    document.getElementById('login-fields').classList.remove('hidden');
+    document.getElementById('logged-in-info').classList.add('hidden');
+    document.getElementById('btn-shop').classList.add('hidden');
+    document.getElementById('user-info').innerText = 'Non connecté';
+    document.getElementById('playerName').value = '';
+    document.getElementById('playerPassword').value = '';
+    showToast("Déconnecté !");
 }
 
 function showShop() {
@@ -463,7 +500,6 @@ socket.on('game_over', (data) => {
         document.getElementById('go-title').style.color = data.winner === 'Méchants' ? '#e74c3c' : '#3498db';
         document.getElementById('go-desc').innerText = data.reason;
         
-        // --- AFFICHAGE DES CARTES DES VAINQUEURS ---
         const goCardsContainer = document.getElementById('go-winners-cards');
         goCardsContainer.innerHTML = '';
         data.winners_list.forEach(w => {

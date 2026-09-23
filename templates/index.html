@@ -16,9 +16,7 @@
     <div id="game-over-screen" class="hidden">
         <h1 id="go-title">Victoire !</h1>
         <p id="go-desc">Raison</p>
-        <!-- NOUVEAU : Zone d'affichage des cartes des vainqueurs -->
         <div id="go-winners-cards" class="winners-cards-container"></div>
-        
         <div class="go-buttons">
             <button id="btn-replay" onclick="startGame()" style="display:none;">Rejouer</button>
             <button class="btn-alt" onclick="location.reload()">Quitter vers le Menu</button>
@@ -63,11 +61,22 @@
         
         <div id="initial-menu" class="panel">
             <h3>Compte ou Invité</h3>
-            <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
-            <input type="password" id="playerPassword" placeholder="Mot de passe (optionnel)"><br>
-            <div style="font-size: 0.85em; margin-bottom: 10px; color: #bdc3c7;">
-                Sans mot de passe = Invité.<br>Avec = Connexion/Inscription.
+            
+            <!-- Champs affichés si on n'est pas connecté -->
+            <div id="login-fields">
+                <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
+                <input type="password" id="playerPassword" placeholder="Mot de passe (optionnel)"><br>
+                <div style="font-size: 0.85em; margin-bottom: 10px; color: #bdc3c7;">
+                    Sans mot de passe = Invité.<br>Avec = Connexion / Inscription automatique.
+                </div>
             </div>
+
+            <!-- Affiché si on est déjà connecté via les cookies -->
+            <div id="logged-in-info" class="hidden" style="margin-bottom: 15px;">
+                <div style="font-size: 1.2em; margin-bottom: 5px;">Rebonjour, <strong id="logged-in-name" style="color: #2ecc71;"></strong> !</div>
+                <button onclick="logout()" style="background-color: #7f8c8d; padding: 5px 15px; width: auto; font-size: 0.9em;">Changer de compte</button>
+            </div>
+
             <button onclick="handleLoginAndProceed('host')" style="background-color: #27ae60;">Héberger une partie</button>
             <hr>
             <input type="text" id="roomCodeInput" placeholder="Code de la partie">
@@ -101,7 +110,8 @@
 
         <div id="lobby" class="panel" style="display:none;">
             <h2>Code : <span id="displayRoomCode" class="highlight"></span></h2>
-            <h3>Joueurs connectés :</h3>
+            <h3>Joueurs dans le salon :</h3>
+            <!-- Liste repensée avec des badges (via CSS) -->
             <ul id="playersList"></ul>
             <p id="waitingMessage">En attente de l'hôte pour lancer...</p>
             <div style="text-align: center;">
@@ -112,7 +122,6 @@
 
     <!-- Plateau de jeu -->
     <div id="game-board" class="layout-grid" style="display:none;">
-        
         <div id="top-left-controls">
             <button id="layout-toggle" onclick="toggleLayout()">Mode Table 🎲</button>
             <button onclick="showRules()" class="btn-rules-style">📜 Règles</button>

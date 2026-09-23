@@ -1,7 +1,7 @@
 /* GLOBAL */
 .hidden { display: none !important; }
 body { background: radial-gradient(circle at center, #2c3e50, #1a252f); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; user-select: none; }
-h1 { margin-top: 50px; font-size: 2.8em; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); letter-spacing: 2px; } /* Titre descendu */
+h1 { margin-top: 50px; font-size: 2.8em; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); letter-spacing: 2px; }
 .panel { background: rgba(0, 0, 0, 0.4); padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; margin: 0 auto; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
 .settings { display: flex; flex-direction: column; gap: 10px; text-align: left; margin-bottom: 15px; }
 .settings label { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em; }
@@ -17,6 +17,10 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #user-header { position: absolute; top: 10px; right: 20px; text-align: right; font-weight: bold; z-index: 1000; }
 #btn-shop { background: #f39c12; padding: 5px 15px; border-radius: 20px; font-size: 0.9em; margin-top: 5px; width: auto; }
 #btn-shop:hover { background: #e67e22; }
+
+/* BADGES JOUEURS SALON */
+#playersList { list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; }
+#playersList li { background: rgba(52, 152, 219, 0.2); border: 2px solid #3498db; border-radius: 8px; padding: 8px 15px; font-weight: bold; color: #ecf0f1; font-size: 1.1em; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
 /* BOUTIQUE ET SKINS */
 .shop-grid { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
@@ -48,8 +52,8 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #top-left-controls { position: fixed; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 10px; }
 #top-left-controls button { width: auto; margin: 0; padding: 8px 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-/* LAYOUTS (Remontés) */
-.layout-grid { display: flex; flex-direction: column; align-items: center; padding-top: 10px; padding-bottom: 120px; gap: 30px; } /* padding-top réduit de 60 à 10 */
+/* LAYOUTS */
+.layout-grid { display: flex; flex-direction: column; align-items: center; padding-top: 10px; padding-bottom: 120px; gap: 30px; } 
 .layout-grid #center-table { order: 1; }
 .layout-grid #my-area { order: 2; display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
 .layout-grid #opponents-area { order: 3; display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
@@ -131,11 +135,7 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #game-over-screen.hidden { display: none; } #game-over-screen h1 { font-size: 4em; margin-bottom: 0; color: #f1c40f; }
 .winners-cards-container { display: flex; gap: 20px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
 .go-winner-card { display: flex; flex-direction: column; align-items: center; gap: 10px; animation: popIn 0.5s ease forwards; opacity: 0; transform: scale(0.5); }
-.go-winner-card:nth-child(1) { animation-delay: 1.2s; }
-.go-winner-card:nth-child(2) { animation-delay: 1.4s; }
-.go-winner-card:nth-child(3) { animation-delay: 1.6s; }
-.go-winner-card:nth-child(4) { animation-delay: 1.8s; }
-.go-winner-card:nth-child(5) { animation-delay: 2.0s; }
+.go-winner-card:nth-child(1) { animation-delay: 1.2s; } .go-winner-card:nth-child(2) { animation-delay: 1.4s; } .go-winner-card:nth-child(3) { animation-delay: 1.6s; } .go-winner-card:nth-child(4) { animation-delay: 1.8s; } .go-winner-card:nth-child(5) { animation-delay: 2.0s; }
 @keyframes popIn { to { opacity: 1; transform: scale(1); } }
 .role-front-static { width: 80px; height: 120px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; border: 2px solid gold; box-shadow: 0 5px 15px rgba(0,0,0,0.7); font-size: 1.1em; color: white; }
 .role-front-static.Gentil { background: #3498db; }

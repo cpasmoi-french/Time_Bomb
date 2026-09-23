@@ -5,6 +5,14 @@ let totalCablesNeeded = 5;
 let currentTurnSid = '';
 let previousTurnSid = null;
 let hostSid = '';
+let canPlay = false; // Bloque les clics pendant les animations
+
+// --- Helper pour le design des cartes ---
+function getCardHTML(type) {
+    if(type === 'Bombe') return '💣';
+    if(type === 'Interrupteur') return `<div class="cable-art"><div class="cable-line"></div><div class="cable-line green"></div><div class="cable-line"></div></div>`;
+    return `<div class="cable-art"><div class="cable-line"></div><div class="cable-line"></div><div class="cable-line"></div></div>`;
+}
 
 // --- Navigation du Menu ---
 function showSettingsMenu() {
@@ -13,19 +21,16 @@ function showSettingsMenu() {
     document.getElementById('creation-settings').style.display = 'block';
     syncFromTotal();
 }
-
 function hideSettingsMenu() {
     document.getElementById('creation-settings').style.display = 'none';
     document.getElementById('initial-menu').style.display = 'block';
 }
-
 function syncFromTotal() {
     const total = parseInt(document.getElementById('nbJoueurs').value);
     document.getElementById('mechants').value = 1;
     document.getElementById('gentils').value = total - 1;
     document.getElementById('interrupteurs').value = total;
 }
-
 function syncFromRoles(changedRole) {
     const total = parseInt(document.getElementById('nbJoueurs').value);
     const g = parseInt(document.getElementById('gentils').value);
@@ -33,7 +38,6 @@ function syncFromRoles(changedRole) {
     if (changedRole === 'gentils') document.getElementById('mechants').value = total - g;
     else if (changedRole === 'mechants') document.getElementById('gentils').value = total - m;
 }
-
 function showToast(msg) {
     const toast = document.getElementById('toast-msg');
     toast.innerText = msg;
@@ -51,14 +55,12 @@ function createGame() {
     };
     socket.emit('create_game', data);
 }
-
 function joinGame() {
     const room = document.getElementById('roomCodeInput').value;
     const name = document.getElementById('playerName').value;
     if(name && room) socket.emit('join_game', { room: room, playerName: name });
     else showToast("Pseudo et Code requis !");
 }
-
 function startGame() { socket.emit('start_game', { room: currentRoom }); }
 
 socket.on('game_created', (data) => {
@@ -66,17 +68,15 @@ socket.on('game_created', (data) => {
     document.getElementById('creation-settings').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
-    document.getElementById('chat-widget').style.display = 'block'; // Affiche le bouton chat
+    document.getElementById('chat-widget').style.display = 'block';
 });
-
 socket.on('joined_success', (data) => {
     currentRoom = data.room;
     document.getElementById('initial-menu').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
-    document.getElementById('chat-widget').style.display = 'block'; // Affiche le bouton chat
+    document.getElementById('chat-widget').style.display = 'block';
 });
-
 socket.on('update_lobby', (data) => {
     const list = document.getElementById('playersList');
     list.innerHTML = '';
@@ -85,7 +85,6 @@ socket.on('update_lobby', (data) => {
         li.innerText = p;
         list.appendChild(li);
     });
-    
     hostSid = data.host_sid;
     if (socket.id === hostSid) {
         document.getElementById('startBtn').style.display = 'block';
@@ -103,15 +102,64 @@ socket.on('game_started', (data) => {
     
     totalCablesNeeded = data.cables_needed;
     globalPlayers = data.all_players;
+    canPlay = false;
     
+    // Prépare la carte rôle (sans la retourner)
     const roleCard = document.getElementById('myRoleCard');
     roleCard.innerText = data.role;
     roleCard.className = 'role-back ' + data.role;
 
-    updateTurnDisplay(data.turn_sid, data.turn_name, data.previous_turn);
     renderCenterSlots(0, false);
-    renderBoard(data.my_cards);
+    document.getElementById('players-area').innerHTML = '';
+    document.getElementById('turnIndicator').innerText = "Distribution...";
+
+    // 1. Animation du Rôle Géant
+    const roleCont = document.getElementById('role-card-container');
+    const darkOverlay = document.getElementById('dark-overlay');
+    
+    roleCont.classList.add('center-reveal');
+    darkOverlay.style.display = 'block';
+    setTimeout(() => darkOverlay.style.opacity = '1', 10);
+
+    setTimeout(() => {
+        roleCont.classList.add('active'); // Retourne la carte
+        
+        setTimeout(() => {
+            roleCont.classList.remove('active'); // Cache la carte
+            
+            setTimeout(() => {
+                roleCont.classList.remove('center-reveal'); // S'envole dans le coin
+                darkOverlay.style.opacity = '0';
+                
+                setTimeout(() => {
+                    darkOverlay.style.display = 'none';
+                    // 2. Lance la manche
+                    startRoundAnimation(data.my_cards, data.turn_sid, data.turn_name, data.previous_turn);
+                }, 800); 
+            }, 600);
+        }, 3000); // 3 sec pour lire son rôle
+    }, 500);
 });
+
+function startRoundAnimation(myCardsData, turnSid, turnName, prevSid) {
+    canPlay = false;
+    document.getElementById('turnIndicator').innerText = "Mémorise tes cartes !";
+    
+    renderBoard(myCardsData, true); // true = Affiche NOS cartes face visible
+
+    // Temps de mémorisation
+    setTimeout(() => {
+        document.querySelectorAll('.initial-reveal').forEach(c => {
+            c.classList.remove('flipped'); // Cache nos cartes
+        });
+        
+        // Autorise à jouer une fois les cartes retournées
+        setTimeout(() => {
+            canPlay = true;
+            updateTurnDisplay(turnSid, turnName, prevSid);
+        }, 600);
+    }, 4000); // 4 secondes
+}
 
 function updateTurnDisplay(turnSid, turnName, prevSid) {
     currentTurnSid = turnSid;
@@ -142,7 +190,9 @@ function renderCenterSlots(found, bombExploded) {
     for(let i = 0; i < totalCablesNeeded; i++) {
         let slot = document.createElement('div');
         slot.className = 'mini-slot ' + (i < found ? 'filled-cable' : 'empty-cable');
-        if (i < found) slot.innerHTML = '✅';
+        if (i < found) {
+            slot.innerHTML = `<div class="cable-art mini-art"><div class="cable-line"></div><div class="cable-line green"></div><div class="cable-line"></div></div>`;
+        }
         container.appendChild(slot);
     }
     let bombSlot = document.createElement('div');
@@ -151,7 +201,7 @@ function renderCenterSlots(found, bombExploded) {
     container.appendChild(bombSlot);
 }
 
-function renderBoard(myCardsData) {
+function renderBoard(myCardsData, isInitialReveal = false) {
     const area = document.getElementById('players-area');
     area.innerHTML = '';
 
@@ -168,47 +218,38 @@ function renderBoard(myCardsData) {
         
         const cardsContainer = mat.querySelector('.cards-container');
         for (let i = 0; i < myCardsData.length; i++) {
+            let cardType = isMe ? myCardsData[i].type : 'Unknown';
+            let backContent = isMe ? getCardHTML(cardType) : '';
+            let backClass = isMe ? cardType : '';
+
             let wrapper = document.createElement('div');
             wrapper.className = 'card-wrapper';
             wrapper.onclick = () => {
+                if (!canPlay) return;
                 if (!isMe) socket.emit('reveal_card', { room: currentRoom, target_sid: sid, card_index: i });
             };
             wrapper.innerHTML = `
-                <div class="card" id="card-${sid}-${i}">
+                <div class="card ${isMe && isInitialReveal ? 'flipped initial-reveal' : ''}" id="card-${sid}-${i}">
                     <div class="card-face card-front"></div>
-                    <div class="card-face card-back" id="back-${sid}-${i}"></div>
+                    <div class="card-face card-back ${backClass}" id="back-${sid}-${i}">${backContent}</div>
                 </div>
             `;
             cardsContainer.appendChild(wrapper);
         }
     }
-    updateTurnDisplay(currentTurnSid, globalPlayers[currentTurnSid], previousTurnSid);
+    if (!isInitialReveal) {
+        updateTurnDisplay(currentTurnSid, globalPlayers[currentTurnSid], previousTurnSid);
+    }
 }
 
 socket.on('card_revealed', (data) => {
     const cardEl = document.getElementById(`card-${data.target_sid}-${data.card_index}`);
     const backEl = document.getElementById(`back-${data.target_sid}-${data.card_index}`);
     
-    if(data.card_type === 'Bombe') {
-        backEl.innerHTML = '💣';
-    } else if(data.card_type === 'Interrupteur') {
-        backEl.innerHTML = `
-            <div class="cable-art">
-                <div class="cable-line"></div>
-                <div class="cable-line green"></div>
-                <div class="cable-line"></div>
-            </div>`;
-        cardEl.classList.add('halo-anim');
-    } else {
-        backEl.innerHTML = `
-            <div class="cable-art">
-                <div class="cable-line"></div>
-                <div class="cable-line"></div>
-                <div class="cable-line"></div>
-            </div>`;
-    }
-
+    backEl.innerHTML = getCardHTML(data.card_type);
     backEl.className = 'card-face card-back ' + data.card_type;
+    if(data.card_type === 'Interrupteur') cardEl.classList.add('halo-anim');
+    
     cardEl.classList.add('flipped');
     
     renderCenterSlots(data.cables_found, data.card_type === 'Bombe');
@@ -216,14 +257,14 @@ socket.on('card_revealed', (data) => {
 });
 
 socket.on('new_round_data', (data) => {
+    canPlay = false;
     const indicator = document.getElementById('turnIndicator');
     indicator.innerText = "Nouvelle manche !";
     indicator.className = "";
     document.querySelectorAll('.status-dot').forEach(el => el.style.display = 'none');
 
     setTimeout(() => {
-        renderBoard(data.my_cards);
-        updateTurnDisplay(data.turn_sid, data.turn_name, data.previous_turn);
+        startRoundAnimation(data.my_cards, data.turn_sid, data.turn_name, data.previous_turn);
     }, 3000);
 });
 
@@ -252,14 +293,10 @@ function toggleChat() {
     chat.classList.toggle('hidden');
     if(!chat.classList.contains('hidden')) {
         document.getElementById('chatInput').focus();
-        document.getElementById('chat-toggle').style.background = '#3498db'; // Réinitialise la couleur
+        document.getElementById('chat-toggle').style.background = '#3498db';
     }
 }
-
-function handleChatEnter(e) {
-    if(e.key === 'Enter') sendChatMessage();
-}
-
+function handleChatEnter(e) { if(e.key === 'Enter') sendChatMessage(); }
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
@@ -268,20 +305,18 @@ function sendChatMessage() {
         input.value = '';
     }
 }
-
 socket.on('chat_message', (data) => {
     const msgs = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = 'chat-msg';
     div.innerHTML = `<strong>${data.sender}:</strong> ${data.msg}`;
     msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight; // Fait défiler vers le bas
+    msgs.scrollTop = msgs.scrollHeight;
     
-    // Animation du bouton si le chat est fermé
     const chat = document.getElementById('chat-container');
     if (chat.classList.contains('hidden')) {
         const btn = document.getElementById('chat-toggle');
-        btn.style.background = '#e74c3c'; // Devient rouge
+        btn.style.background = '#e74c3c';
         setTimeout(() => btn.style.background = '#3498db', 300);
         setTimeout(() => btn.style.background = '#e74c3c', 600);
     }

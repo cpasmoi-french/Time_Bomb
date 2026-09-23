@@ -15,8 +15,8 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #center-table { background: radial-gradient(circle, #27ae60, #1e8449); border: 8px solid #8d6e63; border-radius: 50%; width: 280px; height: 280px; margin: 20px auto; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5); }
 #center-table h2 { margin: 5px 0; font-size: 1.1em; color: #ecf0f1; }
 #slots-container { display: flex; flex-wrap: wrap; justify-content: center; width: 80%; gap: 5px; margin-bottom: 10px; }
-.mini-slot { width: 35px; height: 50px; border: 2px dashed #bdc3c7; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; background: rgba(0,0,0,0.2); }
-.mini-slot.filled-cable { border-style: solid; background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+.mini-slot { width: 35px; height: 50px; border: 2px dashed #bdc3c7; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; background: rgba(0,0,0,0.2); overflow: hidden; }
+.mini-slot.filled-cable { border-style: solid; border-color: #2ecc71; background: #34495e; box-shadow: 0 0 10px #2ecc71; }
 .mini-slot.empty-bomb { border-color: #e74c3c; opacity: 0.5; }
 .mini-slot.filled-bomb { border-style: solid; background: #e74c3c; box-shadow: 0 0 15px #e74c3c; }
 #turnIndicator { margin-top: 5px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; transition: 0.3s; }
@@ -50,22 +50,34 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 .cable-art { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; width: 100%; height: 100%; }
 .cable-line { width: 150%; height: 8px; background: #7f8c8d; transform: rotate(-35deg); border-top: 1px solid #95a5a6; border-bottom: 2px solid #2c3e50; }
 .cable-line.green { background: #2ecc71; height: 14px; border-top: 2px solid #27ae60; border-bottom: 3px solid #1e8449; box-shadow: 0 0 10px #2ecc71; }
+.mini-art { gap: 3px; transform: scale(0.4); } /* Taille pour le slot central */
+
 .halo-anim { animation: success-halo 1.5s ease-out; }
 @keyframes success-halo { 0% { box-shadow: 0 0 0px #2ecc71; } 50% { box-shadow: 0 0 30px 15px rgba(46, 204, 113, 0.9); } 100% { box-shadow: 0 0 5px 0px rgba(46, 204, 113, 0); } }
 
-/* Carte Rôle */
-#role-card-container { position: fixed; bottom: 20px; right: 20px; width: 80px; height: 120px; perspective: 1000px; z-index: 100; cursor: pointer; }
+/* Voile sombre pour l'apparition du rôle */
+#dark-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 2000; display: none; opacity: 0; transition: opacity 0.5s; }
+
+/* Carte Rôle & Animation géante */
+#role-card-container { 
+    position: fixed; bottom: 20px; right: 20px; width: 80px; height: 120px; perspective: 1000px; 
+    z-index: 100; cursor: pointer; 
+    transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1), bottom 0.8s cubic-bezier(0.25, 0.8, 0.25, 1), right 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+#role-card-container.center-reveal {
+    bottom: 50vh; right: 50vw;
+    transform: translate(50%, 50%) scale(2.5);
+    z-index: 3000;
+}
 .role-inner { width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
-@media (hover: hover) { #role-card-container:hover .role-inner { transform: rotateY(180deg); } }
+@media (hover: hover) { #role-card-container:not(.center-reveal):hover .role-inner { transform: rotateY(180deg); } }
 #role-card-container.active .role-inner { transform: rotateY(180deg); }
 .role-front, .role-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; border: 2px solid gold; box-shadow: 0 5px 15px rgba(0,0,0,0.7); }
 .role-front { background: #111; color: gold; font-size: 0.9em; }
 .role-back { transform: rotateY(180deg); color: white; font-size: 1.1em; }
 .role-back.Gentil { background: #3498db; } .role-back.Méchant { background: #e74c3c; }
 
-/* ============================
-   CHAT WIDGET
-============================= */
+/* CHAT WIDGET */
 #chat-widget { position: fixed; bottom: 20px; left: 20px; z-index: 1000; text-align: left; }
 #chat-toggle { background: #3498db; border-radius: 20px; padding: 10px 20px; font-size: 1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: auto; transition: background 0.3s; }
 #chat-container { width: 300px; height: 400px; background: rgba(30, 40, 50, 0.95); border: 2px solid #3498db; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.7); transition: transform 0.3s; transform-origin: bottom left; margin-top: 10px; }
@@ -79,13 +91,10 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #chatInput { flex-grow: 1; margin: 0; border-radius: 5px 0 0 5px; width: 60%; }
 #chat-input-area button { width: 30%; margin: 0; padding: 10px; border-radius: 0 5px 5px 0; background: #2ecc71; }
 
-@media (max-width: 600px) {
-    #chat-widget { bottom: 10px; left: 10px; }
-    #chat-container { width: 260px; height: 350px; }
-}
+@media (max-width: 600px) { #chat-widget { bottom: 10px; left: 10px; } #chat-container { width: 260px; height: 350px; } }
 
 /* Overlays (Toast & Fin) */
-#toast-msg { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #e74c3c; padding: 10px 20px; border-radius: 5px; z-index: 2000; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.3s; opacity: 1; }
+#toast-msg { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #e74c3c; padding: 10px 20px; border-radius: 5px; z-index: 4000; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.3s; opacity: 1; }
 #toast-msg.hidden { opacity: 0; pointer-events: none; top: -50px; }
 #game-over-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 #game-over-screen.hidden { display: none; }

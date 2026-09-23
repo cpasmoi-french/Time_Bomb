@@ -11,6 +11,7 @@
 <body>
     <div id="toast-msg" class="hidden"></div>
     <div id="explosion-overlay"></div>
+    <div id="dark-overlay"></div> <!-- Nouveau voile sombre pour le focus -->
 
     <div id="game-over-screen" class="hidden">
         <h1 id="go-title">Victoire !</h1>
@@ -57,7 +58,6 @@
             <h3>Joueurs connectés :</h3>
             <ul id="playersList"></ul>
             <p id="waitingMessage">En attente de l'hôte pour lancer...</p>
-            <!-- Bouton Lancer centré -->
             <div style="text-align: center;">
                 <button id="startBtn" onclick="startGame()" style="display:none; margin: 10px auto;">Lancer la partie !</button>
             </div>
@@ -79,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Widget du Chat -->
     <div id="chat-widget" style="display:none;">
         <button id="chat-toggle" onclick="toggleChat()">💬 Chat</button>
         <div id="chat-container" class="hidden">

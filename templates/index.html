@@ -11,7 +11,7 @@
 <body>
     <div id="toast-msg" class="hidden"></div>
     <div id="explosion-overlay"></div>
-    <div id="dark-overlay"></div> <!-- Nouveau voile sombre pour le focus -->
+    <div id="dark-overlay"></div>
 
     <div id="game-over-screen" class="hidden">
         <h1 id="go-title">Victoire !</h1>
@@ -20,6 +20,18 @@
             <button id="btn-replay" onclick="startGame()" style="display:none;">Rejouer</button>
             <button class="btn-alt" onclick="location.reload()">Quitter vers le Menu</button>
         </div>
+    </div>
+
+    <!-- Modale d'Annonce -->
+    <div id="announcement-modal" class="hidden">
+        <h2>Fais ton Annonce !</h2>
+        <label>Combien de câbles (✅) as-tu ?
+            <input type="number" id="announce-cables" value="0" min="0" max="5">
+        </label><br>
+        <label style="cursor:pointer;">
+            <input type="checkbox" id="announce-bomb"> J'ai la Bombe (💣)
+        </label><br>
+        <button onclick="submitAnnouncement()">Annoncer à tous</button>
     </div>
 
     <div id="menu-container">
@@ -36,17 +48,13 @@
         <div id="creation-settings" class="panel" style="display:none;">
             <h3>Paramètres de la partie</h3>
             <div class="settings">
-                <label>Total Joueurs : 
-                    <input type="number" id="nbJoueurs" value="5" min="4" max="8" onchange="syncFromTotal()">
-                </label>
-                <label>Gentils : 
-                    <input type="number" id="gentils" value="4" min="1" max="7" onchange="syncFromRoles('gentils')">
-                </label>
-                <label>Méchants : 
-                    <input type="number" id="mechants" value="1" min="1" max="7" onchange="syncFromRoles('mechants')">
-                </label>
-                <label>Câbles à trouver : 
-                    <input type="number" id="interrupteurs" value="5" min="1" max="10">
+                <label>Total Joueurs : <input type="number" id="nbJoueurs" value="5" min="4" max="8" onchange="syncFromTotal()"></label>
+                <label>Gentils : <input type="number" id="gentils" value="4" min="1" max="7" onchange="syncFromRoles('gentils')"></label>
+                <label>Méchants : <input type="number" id="mechants" value="1" min="1" max="7" onchange="syncFromRoles('mechants')"></label>
+                <label>Câbles à trouver : <input type="number" id="interrupteurs" value="5" min="1" max="10"></label>
+                <hr>
+                <label style="justify-content: center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="opt-annonces" checked style="width:auto; transform: scale(1.5);"> Jouer avec annonces
                 </label>
             </div>
             <button onclick="createGame()">Valider et Créer</button>
@@ -64,13 +72,21 @@
         </div>
     </div>
 
+    <!-- Plateau de jeu (Grid par défaut) -->
     <div id="game-board" style="display:none;">
+        <button id="layout-toggle" onclick="toggleLayout()">Mode Table 🎲</button>
+        
+        <div id="opponents-area"></div>
+        
         <div id="center-table">
+            <div id="bomb-slot-container"></div>
             <h2>Câbles à trouver</h2>
             <div id="slots-container"></div>
             <div id="turnIndicator">...</div>
         </div>
-        <div id="players-area"></div>
+        
+        <div id="my-area"></div>
+
         <div id="role-card-container" onclick="this.classList.toggle('active')">
             <div class="role-inner">
                 <div class="role-front">Ton Rôle</div>
@@ -82,10 +98,7 @@
     <div id="chat-widget" style="display:none;">
         <button id="chat-toggle" onclick="toggleChat()">💬 Chat</button>
         <div id="chat-container" class="hidden">
-            <div id="chat-header">
-                <span>Discussion</span>
-                <button onclick="toggleChat()">✖</button>
-            </div>
+            <div id="chat-header"><span>Discussion</span><button onclick="toggleChat()">✖</button></div>
             <div id="chat-messages"></div>
             <div id="chat-input-area">
                 <input type="text" id="chatInput" placeholder="Ton message..." onkeypress="handleChatEnter(event)">

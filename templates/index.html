@@ -22,7 +22,25 @@
         </div>
     </div>
 
-    <!-- Modale d'Annonce -->
+    <!-- Modale des Règles du jeu -->
+    <div id="rules-modal" class="hidden">
+        <h2>📜 Règles de MLR TB</h2>
+        <div class="rules-text">
+            <p><strong>But du jeu :</strong><br>
+            Les <strong>Gentils</strong> (Bleu) doivent trouver tous les câbles de désamorçage (✅) avant la fin de la 4ème manche.<br>
+            Les <strong>Méchants</strong> (Rouge) doivent faire exploser la bombe (💣) ou épuiser le temps (fin de la 4ème manche).</p>
+            
+            <p><strong>Déroulement :</strong><br>
+            Chaque joueur reçoit des cartes face cachée. Le joueur dont c'est le tour choisit une carte chez un autre joueur pour la révéler. Ce joueur devient le prochain à piocher.<br>
+            <span style="color:#e74c3c;">Attention :</span> Sauf au premier tour d'une manche, vous n'avez pas le droit de piocher chez la personne qui vient de piocher chez vous !</p>
+            
+            <p><strong>Manches & Annonces :</strong><br>
+            Dès qu'autant de cartes que le nombre de joueurs ont été révélées, la manche se termine. Les cartes restantes sont mélangées et redistribuées.<br>
+            Si l'option est active, chaque manche commence par une phase d'annonce où chaque joueur doit (mentir ou) dire la vérité sur son jeu !</p>
+        </div>
+        <button onclick="hideRules()">Compris !</button>
+    </div>
+
     <div id="announcement-modal" class="hidden">
         <h2>Fais ton Annonce !</h2>
         <label>Combien de câbles de désamorçage (✅) as-tu ?
@@ -34,15 +52,27 @@
         <button onclick="submitAnnouncement()">Annoncer à tous</button>
     </div>
 
+    <div id="user-header">
+        <span id="user-info">Non connecté</span>
+        <button id="btn-shop" class="hidden" onclick="showShop()">🛒 Boutique</button>
+    </div>
+
     <div id="menu-container">
         <h1>MLR 💣 TB</h1>
         
         <div id="initial-menu" class="panel">
+            <h3>Compte ou Invité</h3>
             <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
-            <button onclick="showSettingsMenu()">Créer une partie</button>
+            <input type="password" id="playerPassword" placeholder="Mot de passe (optionnel)"><br>
+            <div style="font-size: 0.85em; margin-bottom: 10px; color: #bdc3c7;">
+                Sans mot de passe = Invité.<br>Avec mot de passe = Connecte ou Crée le compte.
+            </div>
+            <button onclick="handleLoginAndProceed('host')" style="background-color: #27ae60;">Héberger une partie</button>
             <hr>
             <input type="text" id="roomCodeInput" placeholder="Code de la partie">
-            <button onclick="joinGame()" class="btn-alt">Rejoindre</button>
+            <button onclick="handleLoginAndProceed('join')" class="btn-alt">Rejoindre</button>
+            <hr>
+            <button onclick="showRules()" class="btn-rules-style">📜 Règles du jeu</button>
         </div>
 
         <div id="creation-settings" class="panel" style="display:none;">
@@ -61,6 +91,13 @@
             <button onclick="hideSettingsMenu()" class="btn-alt">Retour</button>
         </div>
 
+        <div id="shop-menu" class="panel" style="display:none; max-width: 600px;">
+            <h2>🛒 Boutique de Skins</h2>
+            <p>Tu as <strong id="shop-points" style="color:#f1c40f;">0</strong> points.</p>
+            <div class="shop-grid"></div>
+            <button onclick="hideShop()" class="btn-alt" style="margin-top: 15px;">Retour au menu</button>
+        </div>
+
         <div id="lobby" class="panel" style="display:none;">
             <h2>Code : <span id="displayRoomCode" class="highlight"></span></h2>
             <h3>Joueurs connectés :</h3>
@@ -72,9 +109,13 @@
         </div>
     </div>
 
-    <!-- Plateau de jeu : Initialisé en Mode Grille -->
+    <!-- Plateau de jeu -->
     <div id="game-board" class="layout-grid" style="display:none;">
-        <button id="layout-toggle" onclick="toggleLayout()">Mode Table 🎲</button>
+        
+        <div id="top-left-controls">
+            <button id="layout-toggle" onclick="toggleLayout()">Mode Table 🎲</button>
+            <button onclick="showRules()" class="btn-rules-style">📜 Règles</button>
+        </div>
         
         <div id="center-table">
             <div id="bomb-slot-container"></div>

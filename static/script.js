@@ -1,14 +1,122 @@
 const socket = io();
 let currentRoom = '';
 let globalPlayers = {};
+let globalSkins = {};
 let totalCablesNeeded = 5;
 let currentTurnSid = '';
 let previousTurnSid = null;
 let hostSid = '';
 let canPlay = false; 
-let isBoardLayout = false; // Mode Grille par défaut
+let isBoardLayout = false; 
 
-// --- Layout Table Dynamique (Géométrie) ---
+let user = { username: null, points: 0, skins: ['default'], equipped: 'default' };
+
+const ALL_SKINS = [
+    { id: 'default', name: 'Classique', price: 0 },
+    { id: 'skin-5', name: 'Orange Feu', price: 5 },
+    { id: 'skin-10', name: 'Néon Violet', price: 10 },
+    { id: 'skin-50', name: 'Or Stellaire', price: 50 }
+];
+
+// --- RÈGLES ---
+function showRules() { document.getElementById('rules-modal').classList.remove('hidden'); }
+function hideRules() { document.getElementById('rules-modal').classList.add('hidden'); }
+
+// --- AUTH & BOUTIQUE ---
+async function handleLoginAndProceed(action) {
+    const name = document.getElementById('playerName').value.trim();
+    const pwd = document.getElementById('playerPassword').value;
+    
+    if(!name) return showToast("Pseudo obligatoire !");
+    
+    if(pwd) {
+        const res = await fetch('/api/auth', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: name, password: pwd})
+        });
+        const data = await res.json();
+        
+        if(data.success) {
+            user = { username: name, points: data.points, skins: data.skins, equipped: data.equipped };
+            document.getElementById('user-info').innerHTML = `👤 <strong>${name}</strong> | 🏆 ${data.points} pts`;
+            document.getElementById('btn-shop').classList.remove('hidden');
+            if(data.msg) showToast(data.msg);
+        } else {
+            return showToast(data.msg);
+        }
+    } else {
+        user.username = name;
+        document.getElementById('user-info').innerText = `👤 ${name} (Invité)`;
+    }
+
+    if(action === 'host') showSettingsMenu();
+    else if(action === 'join') joinGame();
+}
+
+function showShop() {
+    document.getElementById('initial-menu').style.display = 'none';
+    document.getElementById('shop-menu').style.display = 'block';
+    renderShop();
+}
+
+function hideShop() {
+    document.getElementById('shop-menu').style.display = 'none';
+    document.getElementById('initial-menu').style.display = 'block';
+}
+
+function renderShop() {
+    document.getElementById('shop-points').innerText = user.points;
+    const grid = document.querySelector('.shop-grid');
+    grid.innerHTML = '';
+    
+    ALL_SKINS.forEach(s => {
+        const hasSkin = user.skins.includes(s.id);
+        const isEquipped = (user.equipped === s.id);
+        
+        let btnHTML = '';
+        if(isEquipped) btnHTML = `<button class="btn-equipped" disabled>Équipé</button>`;
+        else if(hasSkin) btnHTML = `<button class="btn-equip" onclick="equipSkin('${s.id}')">Équiper</button>`;
+        else btnHTML = `<button onclick="buySkin('${s.id}', ${s.price})">Acheter (${s.price} pts)</button>`;
+
+        grid.innerHTML += `
+            <div class="shop-item">
+                <div class="preview-card card-front ${s.id}"></div>
+                <strong>${s.name}</strong>
+                ${btnHTML}
+            </div>
+        `;
+    });
+}
+
+async function buySkin(skin_id, price) {
+    if(user.points < price) return showToast("Fonds insuffisants !");
+    const res = await fetch('/api/shop/buy', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: user.username, skin_id: skin_id, price: price})
+    });
+    const data = await res.json();
+    if(data.success) {
+        user.points = data.points;
+        user.skins = data.skins;
+        document.getElementById('user-info').innerHTML = `👤 <strong>${user.username}</strong> | 🏆 ${data.points} pts`;
+        showToast("Skin acheté !");
+        renderShop();
+    }
+}
+
+async function equipSkin(skin_id) {
+    const res = await fetch('/api/shop/equip', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: user.username, skin_id: skin_id})
+    });
+    const data = await res.json();
+    if(data.success) {
+        user.equipped = skin_id;
+        renderShop();
+    }
+}
+
+// --- Layout Table ---
 function toggleLayout() {
     isBoardLayout = !isBoardLayout;
     const btn = document.getElementById('layout-toggle');
@@ -28,7 +136,6 @@ function toggleLayout() {
 function updateTableLayout() {
     const oppMats = document.querySelectorAll('#opponents-area .player-mat');
     if(!isBoardLayout) {
-        // En mode grille, on enlève le placement forcé
         oppMats.forEach(el => {
             el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = '';
         });
@@ -38,48 +145,28 @@ function updateTableLayout() {
     const N = oppMats.length;
     if(N === 0) return;
     
-    // Rayon du cercle autour de la table (adapté à l'écran)
     const rx = Math.min(window.innerWidth * 0.4, 400); 
     const ry = Math.min(window.innerHeight * 0.35, 300);
     
     let startAngle, endAngle;
-    
-    // Détermination de l'arc de placement en fonction du nombre d'adversaires
-    if (N === 1) { 
-        // Total 2 joueurs : Adversaire en face
-        startAngle = Math.PI * 1.5; 
-        endAngle = Math.PI * 1.5;
-    } else if (N === 2) { 
-        // Total 3 joueurs : Triangle avec nous (Haut-Gauche, Haut-Droite)
-        startAngle = Math.PI * 1.15; 
-        endAngle = Math.PI * 1.85; 
-    } else if (N === 3) { 
-        // Total 4 joueurs : Carré avec nous (Gauche, Haut, Droite)
-        startAngle = Math.PI; 
-        endAngle = Math.PI * 2; 
-    } else { 
-        // Total 5+ joueurs : On utilise un arc plus large qui descend sur les côtés
-        startAngle = Math.PI * 0.9;
-        endAngle = Math.PI * 2.1;
-    }
+    if (N === 1) { startAngle = Math.PI * 1.5; endAngle = Math.PI * 1.5; } 
+    else if (N === 2) { startAngle = Math.PI * 1.15; endAngle = Math.PI * 1.85; } 
+    else if (N === 3) { startAngle = Math.PI; endAngle = Math.PI * 2; } 
+    else { startAngle = Math.PI * 0.9; endAngle = Math.PI * 2.1; }
 
     for (let i = 0; i < N; i++) {
         let f = (N === 1) ? 0 : i / (N - 1);
         let angle = startAngle + f * (endAngle - startAngle);
-        
-        // Calcul des coordonnées x et y à partir du centre
         let x = Math.cos(angle) * rx;
         let y = Math.sin(angle) * ry;
 
         let el = oppMats[i];
         el.style.position = 'absolute';
         el.style.left = `calc(50% + ${x}px)`;
-        el.style.top = `calc(50% + ${y}px)`; // Centré par rapport au milieu de l'écran
+        el.style.top = `calc(50% + ${y}px)`;
         el.style.transform = 'translate(-50%, -50%)';
     }
 }
-
-// Recalcule le layout si la taille de la fenêtre change
 window.addEventListener('resize', () => { if(isBoardLayout) updateTableLayout(); });
 
 // --- Helpers ---
@@ -88,9 +175,7 @@ function getCardHTML(type) {
     if(type === 'Interrupteur') return `<div class="cable-art"><div class="cable-line"></div><div class="cable-line green"></div><div class="cable-line"></div></div>`;
     return `<div class="cable-art"><div class="cable-line"></div><div class="cable-line"></div><div class="cable-line"></div></div>`;
 }
-
 function showSettingsMenu() {
-    if(!document.getElementById('playerName').value) return showToast("Mets d'abord un pseudo !");
     document.getElementById('initial-menu').style.display = 'none';
     document.getElementById('creation-settings').style.display = 'block';
     syncFromTotal();
@@ -119,9 +204,10 @@ function showToast(msg) {
     setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
+// --- Serveur ---
 function createGame() {
     const data = {
-        playerName: document.getElementById('playerName').value,
+        playerName: user.username,
         gentils: document.getElementById('gentils').value,
         mechants: document.getElementById('mechants').value,
         interrupteurs: document.getElementById('interrupteurs').value,
@@ -131,9 +217,8 @@ function createGame() {
 }
 function joinGame() {
     const room = document.getElementById('roomCodeInput').value;
-    const name = document.getElementById('playerName').value;
-    if(name && room) socket.emit('join_game', { room: room, playerName: name });
-    else showToast("Pseudo et Code requis !");
+    if(room) socket.emit('join_game', { room: room, playerName: user.username });
+    else showToast("Code requis !");
 }
 function startGame() { socket.emit('start_game', { room: currentRoom }); }
 
@@ -143,6 +228,7 @@ socket.on('game_created', (data) => {
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
     document.getElementById('chat-widget').style.display = 'block';
+    document.getElementById('user-header').style.display = 'none';
 });
 socket.on('joined_success', (data) => {
     currentRoom = data.room;
@@ -150,6 +236,7 @@ socket.on('joined_success', (data) => {
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
     document.getElementById('chat-widget').style.display = 'block';
+    document.getElementById('user-header').style.display = 'none';
 });
 socket.on('update_lobby', (data) => {
     const list = document.getElementById('playersList');
@@ -175,6 +262,7 @@ socket.on('game_started', (data) => {
     
     totalCablesNeeded = data.cables_needed;
     globalPlayers = data.all_players;
+    globalSkins = data.all_skins;
     canPlay = false;
     
     const roleCard = document.getElementById('myRoleCard');
@@ -228,7 +316,7 @@ function startRoundAnimation(data) {
     }, 4000);
 }
 
-// --- Système d'Annonces ---
+// --- Annonces ---
 function handleAnnounceTurn(sid, name) {
     canPlay = false;
     if (sid === socket.id) {
@@ -310,6 +398,8 @@ function renderBoard(myCardsData, isInitialReveal = false) {
 
     for (const [sid, name] of Object.entries(globalPlayers)) {
         let isMe = (sid === socket.id);
+        let skinClass = globalSkins[sid] || 'default'; 
+        
         let mat = document.createElement('div');
         mat.className = 'player-mat' + (isMe ? ' my-mat' : '');
         mat.innerHTML = `
@@ -336,7 +426,7 @@ function renderBoard(myCardsData, isInitialReveal = false) {
             };
             wrapper.innerHTML = `
                 <div class="card ${isMe && isInitialReveal ? 'flipped initial-reveal' : ''}" id="card-${sid}-${i}">
-                    <div class="card-face card-front"></div>
+                    <div class="card-face card-front ${skinClass}"></div>
                     <div class="card-face card-back ${backClass}" id="back-${sid}-${i}">${backContent}</div>
                 </div>
             `;
@@ -369,7 +459,6 @@ socket.on('new_round_data', (data) => {
     indicator.innerText = "Nouvelle manche !";
     indicator.className = "";
     document.querySelectorAll('.status-dot').forEach(el => el.style.display = 'none');
-
     setTimeout(() => { startRoundAnimation(data); }, 3000);
 });
 
@@ -404,10 +493,7 @@ function handleChatEnter(e) { if(e.key === 'Enter') sendChatMessage(); }
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
-    if(msg && currentRoom) {
-        socket.emit('chat_message', { room: currentRoom, msg: msg });
-        input.value = '';
-    }
+    if(msg && currentRoom) { socket.emit('chat_message', { room: currentRoom, msg: msg }); input.value = ''; }
 }
 socket.on('chat_message', (data) => {
     const msgs = document.getElementById('chat-messages');

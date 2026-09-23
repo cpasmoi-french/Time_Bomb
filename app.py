@@ -1,13 +1,92 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify, session
 from flask_socketio import SocketIO, join_room, emit
-import random
-import string
+from werkzeug.security import generate_password_hash, check_password_hash
+import random, string, sqlite3
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret_key'
+app.config['SECRET_KEY'] = 'super_secret_key_tb'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+def get_db():
+    conn = sqlite3.connect('database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with get_db() as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            points INTEGER DEFAULT 0,
+            skins TEXT DEFAULT 'default',
+            equipped TEXT DEFAULT 'default'
+        )''')
+init_db()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/auth', methods=['POST'])
+def auth():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    with get_db() as conn:
+        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        if user:
+            if check_password_hash(user['password'], password):
+                return jsonify({'success': True, 'points': user['points'], 'skins': user['skins'].split(','), 'equipped': user['equipped']})
+            return jsonify({'success': False, 'msg': 'Mot de passe incorrect.'})
+        else:
+            conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, generate_password_hash(password)))
+            conn.commit()
+            return jsonify({'success': True, 'points': 0, 'skins': ['default'], 'equipped': 'default', 'msg': 'Compte créé avec succès !'})
+
+@app.route('/api/shop/buy', methods=['POST'])
+def buy_skin():
+    data = request.json
+    username = data.get('username')
+    skin_id = data.get('skin_id')
+    price = data.get('price')
+    
+    with get_db() as conn:
+        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        if user and user['points'] >= price:
+            new_points = user['points'] - price
+            new_skins = user['skins'] + f",{skin_id}"
+            conn.execute('UPDATE users SET points = ?, skins = ? WHERE username = ?', (new_points, new_skins, username))
+            conn.commit()
+            return jsonify({'success': True, 'points': new_points, 'skins': new_skins.split(',')})
+    return jsonify({'success': False, 'msg': 'Fonds insuffisants ou erreur.'})
+
+@app.route('/api/shop/equip', methods=['POST'])
+def equip_skin():
+    data = request.json
+    username = data.get('username')
+    skin_id = data.get('skin_id')
+    with get_db() as conn:
+        conn.execute('UPDATE users SET equipped = ? WHERE username = ?', (skin_id, username))
+        conn.commit()
+    return jsonify({'success': True})
+
 games = {}
+
+def get_user_skin(username):
+    with get_db() as conn:
+        user = conn.execute('SELECT equipped FROM users WHERE username = ?', (username,)).fetchone()
+        return user['equipped'] if user else 'default'
+
+def reward_winners(game, winning_team):
+    with get_db() as conn:
+        for sid, role in game['roles'].items():
+            if (winning_team == 'Gentils' and role == 'Gentil') or (winning_team == 'Méchants' and role == 'Méchant'):
+                username = game['players'].get(sid)
+                if username:
+                    conn.execute('UPDATE users SET points = points + 1 WHERE username = ?', (username,))
+        conn.commit()
 
 def generate_room_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
@@ -28,7 +107,6 @@ def start_round(room):
     cards_per_player = 5 - (game['round'] - 1)
     
     game['announcements'] = {}
-    
     for i, sid in enumerate(game['players'].keys()):
         player_cards = deck[i*cards_per_player : (i+1)*cards_per_player]
         game['cards'][sid] = [{'type': card, 'revealed': False} for card in player_cards]
@@ -42,15 +120,12 @@ def start_round(room):
     else:
         game['phase'] = 'playing'
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
 @socketio.on('create_game')
 def on_create(data):
     room = generate_room_code()
     games[room] = {
         'host': request.sid, 'players': {request.sid: data['playerName']},
+        'skins': {request.sid: get_user_skin(data['playerName'])},
         'settings': data, 'cards': {}, 'roles': {}, 'announcements': {},
         'turn': None, 'previous_turn': None, 'state': 'lobby', 'round': 1, 'phase': 'lobby',
         'cables_found': 0, 'cables_needed': int(data['interrupteurs'])
@@ -66,6 +141,7 @@ def on_join(data):
         if len(games[room]['players']) < 8:
             join_room(room)
             games[room]['players'][request.sid] = data['playerName']
+            games[room]['skins'][request.sid] = get_user_skin(data['playerName'])
             emit('joined_success', {'room': room}, to=request.sid)
             emit('update_lobby', {'players': list(games[room]['players'].values()), 'host_sid': games[room]['host']}, to=room)
         else:
@@ -95,7 +171,8 @@ def on_start(data):
     
     for sid in players_sids:
         emit('game_started', {
-            'role': game['roles'][sid], 'my_cards': game['cards'][sid], 'all_players': game['players'],
+            'role': game['roles'][sid], 'my_cards': game['cards'][sid], 
+            'all_players': game['players'], 'all_skins': game['skins'],
             'phase': game['phase'], 'announce_turn_sid': game.get('announce_turn'),
             'announce_turn_name': game['players'].get(game.get('announce_turn', '')),
             'turn_name': game['players'][game['turn']], 'turn_sid': game['turn'],
@@ -153,17 +230,22 @@ def on_reveal(data):
     }, to=room)
 
     if card['type'] == 'Bombe':
+        reward_winners(game, 'Méchants')
         emit('game_over', {'winner': 'Méchants', 'reason': 'La bombe a explosé !'}, to=room)
         return
     elif game['cables_found'] >= game['cables_needed']:
+        reward_winners(game, 'Gentils')
         emit('game_over', {'winner': 'Gentils', 'reason': 'Tous les interrupteurs ont été trouvés !'}, to=room)
         return
 
+    # Fin de manche
     if game['cards_revealed_this_round'] == len(game['players']):
         game['round'] += 1
         if game['round'] > 4:
+            reward_winners(game, 'Méchants')
             emit('game_over', {'winner': 'Méchants', 'reason': 'Le temps est écoulé !'}, to=room)
         else:
+            game['previous_turn'] = None # RESET DE LA RESTRICTION DE PIOCHE
             start_round(room)
             for sid in game['players'].keys():
                 emit('new_round_data', {

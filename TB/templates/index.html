@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Time Bomb - Online</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div id="menu-container">
+        <h1>Désamorçage</h1>
+        
+        <div id="creation-form">
+            <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
+            
+            <h3>Créer une partie</h3>
+            <label>Gentils (Sherlock) : <input type="number" id="gentils" value="5" min="1"></label><br>
+            <label>Méchants (Moriarty) : <input type="number" id="mechants" value="3" min="1"></label><br>
+            <label>Interrupteurs à trouver : <input type="number" id="interrupteurs" value="5" min="1"></label><br>
+            <button onclick="createGame()">Créer la partie</button>
+            
+            <h3>Ou rejoindre</h3>
+            <input type="text" id="roomCodeInput" placeholder="Code de la partie">
+            <button onclick="joinGame()">Rejoindre</button>
+        </div>
+
+        <div id="lobby" style="display:none;">
+            <h2>Code de la partie : <span id="displayRoomCode"></span></h2>
+            <ul id="playersList"></ul>
+            <button onclick="startGame()">Lancer la partie !</button>
+        </div>
+    </div>
+
+    <div id="game-board" style="display:none;">
+        <div id="info-bar">
+            <span>Ton rôle : <strong id="myRole"></strong></span>
+            <span id="turnIndicator"></span>
+        </div>
+        <div id="players-area"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

@@ -24,7 +24,6 @@
     <div id="menu-container">
         <h1>MLR 💣 TB</h1>
         
-        <!-- Étape 1 : Choix simple -->
         <div id="initial-menu" class="panel">
             <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
             <button onclick="showSettingsMenu()">Créer une partie</button>
@@ -33,7 +32,6 @@
             <button onclick="joinGame()" class="btn-alt">Rejoindre</button>
         </div>
 
-        <!-- Étape 2 : Paramètres de création -->
         <div id="creation-settings" class="panel" style="display:none;">
             <h3>Paramètres de la partie</h3>
             <div class="settings">
@@ -54,13 +52,15 @@
             <button onclick="hideSettingsMenu()" class="btn-alt">Retour</button>
         </div>
 
-        <!-- Étape 3 : Salle d'attente (Lobby) -->
         <div id="lobby" class="panel" style="display:none;">
             <h2>Code : <span id="displayRoomCode" class="highlight"></span></h2>
             <h3>Joueurs connectés :</h3>
             <ul id="playersList"></ul>
             <p id="waitingMessage">En attente de l'hôte pour lancer...</p>
-            <button id="startBtn" onclick="startGame()" style="display:none;">Lancer la partie !</button>
+            <!-- Bouton Lancer centré -->
+            <div style="text-align: center;">
+                <button id="startBtn" onclick="startGame()" style="display:none; margin: 10px auto;">Lancer la partie !</button>
+            </div>
         </div>
     </div>
 
@@ -75,6 +75,22 @@
             <div class="role-inner">
                 <div class="role-front">Ton Rôle</div>
                 <div class="role-back" id="myRoleCard"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget du Chat -->
+    <div id="chat-widget" style="display:none;">
+        <button id="chat-toggle" onclick="toggleChat()">💬 Chat</button>
+        <div id="chat-container" class="hidden">
+            <div id="chat-header">
+                <span>Discussion</span>
+                <button onclick="toggleChat()">✖</button>
+            </div>
+            <div id="chat-messages"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Ton message..." onkeypress="handleChatEnter(event)">
+                <button onclick="sendChatMessage()">Envoyer</button>
             </div>
         </div>
     </div>

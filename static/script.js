@@ -11,7 +11,7 @@ function showSettingsMenu() {
     if(!document.getElementById('playerName').value) return showToast("Mets d'abord un pseudo !");
     document.getElementById('initial-menu').style.display = 'none';
     document.getElementById('creation-settings').style.display = 'block';
-    syncFromTotal(); // Initialise les bonnes valeurs par défaut
+    syncFromTotal();
 }
 
 function hideSettingsMenu() {
@@ -19,7 +19,6 @@ function hideSettingsMenu() {
     document.getElementById('initial-menu').style.display = 'block';
 }
 
-// --- Logique mathématique des rôles ---
 function syncFromTotal() {
     const total = parseInt(document.getElementById('nbJoueurs').value);
     document.getElementById('mechants').value = 1;
@@ -31,12 +30,8 @@ function syncFromRoles(changedRole) {
     const total = parseInt(document.getElementById('nbJoueurs').value);
     const g = parseInt(document.getElementById('gentils').value);
     const m = parseInt(document.getElementById('mechants').value);
-    
-    if (changedRole === 'gentils') {
-        document.getElementById('mechants').value = total - g;
-    } else if (changedRole === 'mechants') {
-        document.getElementById('gentils').value = total - m;
-    }
+    if (changedRole === 'gentils') document.getElementById('mechants').value = total - g;
+    else if (changedRole === 'mechants') document.getElementById('gentils').value = total - m;
 }
 
 function showToast(msg) {
@@ -71,6 +66,7 @@ socket.on('game_created', (data) => {
     document.getElementById('creation-settings').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
+    document.getElementById('chat-widget').style.display = 'block'; // Affiche le bouton chat
 });
 
 socket.on('joined_success', (data) => {
@@ -78,6 +74,7 @@ socket.on('joined_success', (data) => {
     document.getElementById('initial-menu').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
     document.getElementById('displayRoomCode').innerText = currentRoom;
+    document.getElementById('chat-widget').style.display = 'block'; // Affiche le bouton chat
 });
 
 socket.on('update_lobby', (data) => {
@@ -192,7 +189,6 @@ socket.on('card_revealed', (data) => {
     const cardEl = document.getElementById(`card-${data.target_sid}-${data.card_index}`);
     const backEl = document.getElementById(`back-${data.target_sid}-${data.card_index}`);
     
-    // Design dynamique des câbles
     if(data.card_type === 'Bombe') {
         backEl.innerHTML = '💣';
     } else if(data.card_type === 'Interrupteur') {
@@ -202,7 +198,7 @@ socket.on('card_revealed', (data) => {
                 <div class="cable-line green"></div>
                 <div class="cable-line"></div>
             </div>`;
-        cardEl.classList.add('halo-anim'); // Lance le halo de lumière
+        cardEl.classList.add('halo-anim');
     } else {
         backEl.innerHTML = `
             <div class="cable-art">
@@ -249,3 +245,44 @@ socket.on('game_over', (data) => {
 });
 
 socket.on('error', (data) => showToast(data.msg));
+
+// --- Logique du Chat ---
+function toggleChat() {
+    const chat = document.getElementById('chat-container');
+    chat.classList.toggle('hidden');
+    if(!chat.classList.contains('hidden')) {
+        document.getElementById('chatInput').focus();
+        document.getElementById('chat-toggle').style.background = '#3498db'; // Réinitialise la couleur
+    }
+}
+
+function handleChatEnter(e) {
+    if(e.key === 'Enter') sendChatMessage();
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if(msg && currentRoom) {
+        socket.emit('chat_message', { room: currentRoom, msg: msg });
+        input.value = '';
+    }
+}
+
+socket.on('chat_message', (data) => {
+    const msgs = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `<strong>${data.sender}:</strong> ${data.msg}`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight; // Fait défiler vers le bas
+    
+    // Animation du bouton si le chat est fermé
+    const chat = document.getElementById('chat-container');
+    if (chat.classList.contains('hidden')) {
+        const btn = document.getElementById('chat-toggle');
+        btn.style.background = '#e74c3c'; // Devient rouge
+        setTimeout(() => btn.style.background = '#3498db', 300);
+        setTimeout(() => btn.style.background = '#e74c3c', 600);
+    }
+});

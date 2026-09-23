@@ -146,5 +146,15 @@ def on_reveal(data):
                 emit('new_round_data', {'my_cards': game['cards'][sid], 'round': game['round'], 
                 'turn_name': game['players'][game['turn']], 'turn_sid': game['turn'], 'previous_turn': game['previous_turn']}, to=sid)
 
+# --- Gestion du Chat ---
+@socketio.on('chat_message')
+def on_chat_message(data):
+    room = data['room']
+    msg = data['msg']
+    game = games.get(room)
+    if game:
+        sender_name = game['players'].get(request.sid, "Joueur")
+        emit('chat_message', {'sender': sender_name, 'msg': msg}, to=room)
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

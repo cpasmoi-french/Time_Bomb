@@ -17,18 +17,14 @@ def start_round(room):
     deck = []
     
     if game['round'] == 1:
-        # Création du deck initial
         total_cards = len(game['players']) * 5
         deck = ['Bombe'] + ['Interrupteur'] * game['cables_needed'] + ['Neutre'] * (total_cards - 1 - game['cables_needed'])
     else:
-        # Récupération des cartes non révélées
         for sid, p_cards in game['cards'].items():
             deck.extend([c['type'] for c in p_cards if not c['revealed']])
             
     random.shuffle(deck)
     game['cards_revealed_this_round'] = 0
-    
-    # Règle Time Bomb : 5 cartes manche 1, 4 manche 2, 3 manche 3, 2 manche 4
     cards_per_player = 5 - (game['round'] - 1)
     
     for i, sid in enumerate(game['players'].keys()):
@@ -46,14 +42,10 @@ def on_create(data):
         'host': request.sid,
         'players': {request.sid: data['playerName']},
         'settings': data,
-        'cards': {},
-        'roles': {},
-        'turn': None,
-        'previous_turn': None,
-        'state': 'lobby',
-        'round': 1,
-        'cables_found': 0,
-        'cables_needed': int(data['interrupteurs'])
+        'cards': {}, 'roles': {},
+        'turn': None, 'previous_turn': None,
+        'state': 'lobby', 'round': 1,
+        'cables_found': 0, 'cables_needed': int(data['interrupteurs'])
     }
     join_room(room)
     emit('game_created', {'room': room}, to=request.sid)
@@ -77,14 +69,14 @@ def on_join(data):
 def on_start(data):
     room = data['room']
     game = games[room]
-    
-    if request.sid != game['host']:
-        return # Seul l'hôte peut lancer
+    if request.sid != game['host']: return
         
     game['state'] = 'playing'
-    players_sids = list(game['players'].keys())
+    game['round'] = 1
+    game['cables_found'] = 0
+    game['previous_turn'] = None
     
-    # Distribution des rôles
+    players_sids = list(game['players'].keys())
     roles_list = ['Gentil'] * int(game['settings']['gentils']) + ['Méchant'] * int(game['settings']['mechants'])
     random.shuffle(roles_list)
     for i, sid in enumerate(players_sids):
@@ -98,7 +90,9 @@ def on_start(data):
             'role': game['roles'][sid],
             'my_cards': game['cards'][sid],
             'all_players': game['players'],
-            'turn': game['players'][game['turn']],
+            'turn_name': game['players'][game['turn']],
+            'turn_sid': game['turn'],
+            'previous_turn': None,
             'cables_needed': game['cables_needed']
         }, to=sid)
 
@@ -110,54 +104,47 @@ def on_reveal(data):
     game = games[room]
     
     if request.sid != game['turn']:
-        emit('error', {'msg': "Ce n'est pas ton tour !"}, to=request.sid)
+        emit('error', {'msg': "Ce n'est pas à ton tour de piocher !"}, to=request.sid)
         return
     if target_sid == request.sid:
-        emit('error', {'msg': "Tu ne peux pas couper ton propre câble !"}, to=request.sid)
+        emit('error', {'msg': "Tu ne peux pas piocher chez toi-même !"}, to=request.sid)
         return
     if target_sid == game['previous_turn'] and len(game['players']) > 2:
-        emit('error', {'msg': "Tu ne peux pas choisir le joueur qui vient de te choisir !"}, to=request.sid)
+        emit('error', {'msg': "Tu ne peux pas piocher chez le joueur qui vient de te piocher !"}, to=request.sid)
         return
 
     card = game['cards'][target_sid][card_index]
-    if card['revealed']:
-        return
+    if card['revealed']: return
         
     card['revealed'] = True
     game['cards_revealed_this_round'] += 1
     game['previous_turn'] = request.sid
     game['turn'] = target_sid
     
-    if card['type'] == 'Interrupteur':
-        game['cables_found'] += 1
+    if card['type'] == 'Interrupteur': game['cables_found'] += 1
 
-    # On informe du retournement de carte
     emit('card_revealed', {
-        'target_sid': target_sid,
-        'card_index': card_index,
-        'card_type': card['type'],
-        'next_turn': game['players'][game['turn']],
-        'cables_found': game['cables_found']
+        'target_sid': target_sid, 'card_index': card_index, 'card_type': card['type'],
+        'next_turn_name': game['players'][game['turn']], 'next_turn_sid': game['turn'],
+        'previous_turn': game['previous_turn'], 'cables_found': game['cables_found']
     }, to=room)
 
-    # Vérification des conditions de victoire
     if card['type'] == 'Bombe':
         emit('game_over', {'winner': 'Méchants', 'reason': 'La bombe a explosé !'}, to=room)
         return
     elif game['cables_found'] >= game['cables_needed']:
-        emit('game_over', {'winner': 'Gentils', 'reason': 'Tous les interrupteurs ont été désamorcés !'}, to=room)
+        emit('game_over', {'winner': 'Gentils', 'reason': 'Tous les interrupteurs ont été trouvés !'}, to=room)
         return
 
-    # Fin de manche ? (Autant de cartes révélées que de joueurs)
     if game['cards_revealed_this_round'] == len(game['players']):
         game['round'] += 1
         if game['round'] > 4:
-            emit('game_over', {'winner': 'Méchants', 'reason': 'Fin du temps imparti, la bombe explose !'}, to=room)
+            emit('game_over', {'winner': 'Méchants', 'reason': 'Le temps est écoulé, la bombe explose !'}, to=room)
         else:
             start_round(room)
-            # Envoi des nouvelles cartes pour la manche suivante
             for sid in game['players'].keys():
-                emit('new_round_data', {'my_cards': game['cards'][sid], 'round': game['round']}, to=sid)
+                emit('new_round_data', {'my_cards': game['cards'][sid], 'round': game['round'], 
+                'turn_name': game['players'][game['turn']], 'turn_sid': game['turn'], 'previous_turn': game['previous_turn']}, to=sid)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

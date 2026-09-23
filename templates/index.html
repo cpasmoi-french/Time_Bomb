@@ -2,15 +2,26 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Time Bomb - Online</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <!-- Ecran d'explosion (caché par défaut) -->
+    <!-- Notifications (Toasts) et Animations -->
+    <div id="toast-msg" class="hidden"></div>
     <div id="explosion-overlay"></div>
+
+    <!-- Écran de Fin de Partie -->
+    <div id="game-over-screen" class="hidden">
+        <h1 id="go-title">Victoire !</h1>
+        <p id="go-desc">Raison</p>
+        <div class="go-buttons">
+            <button id="btn-replay" onclick="startGame()" style="display:none;">Rejouer</button>
+            <button class="btn-alt" onclick="location.reload()">Quitter vers le Menu</button>
+        </div>
+    </div>
 
     <div id="menu-container">
         <h1>💣 Désamorçage</h1>
@@ -20,9 +31,16 @@
             
             <h3>Créer une partie</h3>
             <div class="settings">
-                <label>Gentils : <input type="number" id="gentils" value="5" min="1"></label>
-                <label>Méchants : <input type="number" id="mechants" value="3" min="1"></label>
-                <label>Interrupteurs : <input type="number" id="interrupteurs" value="5" min="1"></label>
+                <label>Nombre de joueurs (Total) : 
+                    <input type="number" id="nbJoueurs" value="5" min="4" max="8" onchange="autoFillSettings()">
+                </label>
+                <div class="small-info">
+                    <span id="infoGentils">3</span> Gentils | <span id="infoMechants">2</span> Méchants | <span id="infoInterrupteurs">5</span> Câbles
+                </div>
+                <!-- Inputs cachés envoyés au serveur -->
+                <input type="hidden" id="gentils" value="3">
+                <input type="hidden" id="mechants" value="2">
+                <input type="hidden" id="interrupteurs" value="5">
             </div>
             <button onclick="createGame()">Créer la partie</button>
             
@@ -42,20 +60,17 @@
     </div>
 
     <div id="game-board" style="display:none;">
-        <!-- Centre de la table -->
         <div id="center-table">
-            <h2>Câbles désamorcés</h2>
-            <div id="cable-counter">0 / 5</div>
+            <h2>Câbles à trouver</h2>
+            <div id="slots-container"></div>
             <div id="turnIndicator">...</div>
         </div>
 
-        <!-- Zone des joueurs -->
         <div id="players-area"></div>
 
-        <!-- Carte Rôle dans le coin (PC & Mobile) -->
         <div id="role-card-container" onclick="this.classList.toggle('active')">
             <div class="role-inner">
-                <div class="role-front">Ton Rôle<br><small>(Survole ou clique)</small></div>
+                <div class="role-front">Ton Rôle</div>
                 <div class="role-back" id="myRoleCard"></div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-#!/home/mewen/TB/venv/bin/python3
+#!/home/mewen/Time_Bomb/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

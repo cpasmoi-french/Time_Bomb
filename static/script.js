@@ -13,9 +13,10 @@ let user = { username: null, points: 0, skins: ['default'], equipped: 'default' 
 
 const ALL_SKINS = [
     { id: 'default', name: 'Classique', price: 0 },
-    { id: 'skin-5', name: 'Orange Feu', price: 5 },
-    { id: 'skin-10', name: 'Néon Violet', price: 10 },
-    { id: 'skin-50', name: 'Or Stellaire', price: 50 }
+    { id: 'skin_10', name: 'Acier Foudroyant', price: 10 },
+    { id: 'skin_20', name: 'Feu Magmatique', price: 20 },
+    { id: 'skin_50', name: 'Néon Violet', price: 50 },
+    { id: 'skin_100', name: 'Or Stellaire', price: 100 }
 ];
 
 // --- CHARGEMENT DE SESSION ---

@@ -13,12 +13,19 @@ button:hover { background-color: #c0392b; transform: scale(1.05); }
 .highlight { color: #f1c40f; font-size: 1.5em; letter-spacing: 2px; }
 hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 
-/* TABLE CENTRALE */
-#center-table { background: radial-gradient(circle, #27ae60, #1e8449); border: 8px solid #8d6e63; border-radius: 50%; width: 320px; height: 320px; margin: 0 auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.7); padding-top: 20px; box-sizing: border-box; }
-#bomb-slot-container { margin-bottom: 10px; }
-#center-table h2 { margin: 5px 0; font-size: 1.1em; color: #ecf0f1; }
-#slots-container { display: flex; flex-wrap: wrap; justify-content: center; width: 85%; gap: 5px; margin-bottom: auto; } /* margin-bottom: auto repousse le tourIndicator vers le bas */
-#turnIndicator { margin-bottom: 25px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 10px; transition: 0.3s; }
+/* TABLE CENTRALE REPENSÉE ET CENTRÉE */
+#center-table { 
+    background: radial-gradient(circle, #27ae60, #1e8449); border: 8px solid #8d6e63; border-radius: 50%; 
+    width: 320px; height: 320px; margin: 0 auto; display: flex; flex-direction: column; 
+    justify-content: center; /* Centre tous les éléments verticalement */
+    align-items: center; gap: 12px; /* Espace équitable entre la bombe, le titre et les câbles */
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.7); 
+    padding: 10px; box-sizing: border-box; 
+}
+#bomb-slot-container { margin: 0; }
+#center-table h2 { margin: 0; font-size: 1.1em; color: #ecf0f1; }
+#slots-container { display: flex; flex-wrap: wrap; justify-content: center; width: 85%; gap: 5px; margin: 0; }
+#turnIndicator { margin: 0; font-weight: bold; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 10px; transition: 0.3s; }
 .my-turn { background: #f1c40f !important; color: black; box-shadow: 0 0 15px #f1c40f; transform: scale(1.1); }
 .mini-slot { width: 35px; height: 50px; border: 2px dashed #bdc3c7; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; background: rgba(0,0,0,0.2); overflow: hidden; }
 .mini-slot.filled-cable { border-style: solid; border-color: #2ecc71; background: #34495e; box-shadow: 0 0 10px #2ecc71; }
@@ -28,16 +35,16 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 /* BOUTON LAYOUT */
 #layout-toggle { position: fixed; top: 10px; left: 10px; width: auto; padding: 10px 15px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
 
-/* --- MODE GRILLE (Par défaut, Téléphone Portrait) --- */
+/* --- MODE GRILLE --- */
 .layout-grid { display: flex; flex-direction: column; align-items: center; padding-top: 60px; padding-bottom: 120px; gap: 30px; }
 .layout-grid #center-table { order: 1; }
 .layout-grid #my-area { order: 2; display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
 .layout-grid #opponents-area { order: 3; display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
 .layout-grid .player-mat.my-mat { border: 2px solid gold; transform: scale(1.05); }
 
-/* --- MODE TABLE (PC, Paysage) --- */
+/* --- MODE TABLE --- */
 .layout-board { position: relative; height: 100vh; width: 100vw; overflow: hidden; }
-.layout-board #center-table { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
+.layout-board #center-table { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
 .layout-board #my-area { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; }
 .layout-board #my-area .player-mat { border: 2px solid gold; background: rgba(0,0,0,0.8); transform: scale(1.1); margin: 0; }
 .layout-board #opponents-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
@@ -48,15 +55,32 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #announcement-modal h2 { margin-top: 0; color: #f1c40f; }
 #announcement-modal input[type="number"] { width: 80px; font-size: 1.2em; border-radius: 10px; margin-left: 10px; }
 
-/* JOUEURS, CARTES & BULLES */
-.player-mat { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; min-width: 250px; position: relative; }
+/* JOUEURS ET CARTES ALIGNÉES */
+.player-mat { 
+    background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; 
+    width: max-content; /* Force le matelas à s'adapter à la largeur de toutes les cartes */
+    max-width: 95vw; /* Empêche de déborder sur les très petits écrans */
+    position: relative; margin-top: 15px; 
+}
 .player-mat h3 { margin-top: 0; color: #3498db; }
-.cards-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.cards-container { 
+    display: flex; justify-content: center; gap: 10px; 
+    flex-wrap: nowrap; /* EMPÊCHE LES CARTES DE PASSER À LA LIGNE */
+}
 .status-dot { position: absolute; top: 15px; right: 15px; width: 16px; height: 16px; border-radius: 50%; transition: 0.3s; }
 .dot-green { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
 .dot-red { background: #e74c3c; opacity: 0.5; }
-.speech-bubble { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 6px 12px; border-radius: 15px; font-weight: bold; font-size: 1em; box-shadow: 0 4px 8px rgba(0,0,0,0.5); white-space: nowrap; z-index: 50; border: 2px solid #3498db; }
-.speech-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 8px 0; border-style: solid; border-color: #3498db transparent transparent transparent; }
+
+/* BULLES D'ANNONCES (DÉCALÉES À DROITE) */
+.speech-bubble { 
+    position: absolute; top: -40px; right: 10px; left: auto; transform: none; 
+    background: white; color: black; padding: 6px 12px; border-radius: 15px; 
+    font-weight: bold; font-size: 1em; box-shadow: 0 4px 8px rgba(0,0,0,0.5); white-space: nowrap; z-index: 50; border: 2px solid #3498db; 
+}
+.speech-bubble::after { 
+    content: ''; position: absolute; bottom: -8px; right: 20px; left: auto; transform: none; 
+    border-width: 8px 8px 0; border-style: solid; border-color: #3498db transparent transparent transparent; 
+}
 
 .card-wrapper { width: 60px; height: 90px; perspective: 1000px; cursor: pointer; animation: deal-anim 0.5s ease-out backwards; }
 .card-wrapper:nth-child(1) { animation-delay: 0.1s; } .card-wrapper:nth-child(2) { animation-delay: 0.2s; } .card-wrapper:nth-child(3) { animation-delay: 0.3s; } .card-wrapper:nth-child(4) { animation-delay: 0.4s; } .card-wrapper:nth-child(5) { animation-delay: 0.5s; }

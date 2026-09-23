@@ -8,7 +8,7 @@ let hostSid = '';
 let canPlay = false; 
 let isBoardLayout = false; // Mode Grille par défaut
 
-// --- Layout Table Dynamique ---
+// --- Layout Table Dynamique (Géométrie) ---
 function toggleLayout() {
     isBoardLayout = !isBoardLayout;
     const btn = document.getElementById('layout-toggle');
@@ -28,42 +28,58 @@ function toggleLayout() {
 function updateTableLayout() {
     const oppMats = document.querySelectorAll('#opponents-area .player-mat');
     if(!isBoardLayout) {
-        // Enlève le positionnement absolu pour le mode Grille
+        // En mode grille, on enlève le placement forcé
         oppMats.forEach(el => {
             el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = '';
         });
         return;
     }
-    // Mathématiques pour placer les adversaires en Arc autour de la table
+    
     const N = oppMats.length;
     if(N === 0) return;
     
-    // Rayon d'éloignement selon la taille de l'écran
+    // Rayon du cercle autour de la table (adapté à l'écran)
     const rx = Math.min(window.innerWidth * 0.4, 400); 
     const ry = Math.min(window.innerHeight * 0.35, 300);
     
-    // On répartit entre la gauche (Math.PI) et la droite (0), en passant par le haut
-    let startAngle = Math.PI;
-    let endAngle = 0;
+    let startAngle, endAngle;
     
-    // Si beaucoup de joueurs, on élargit un peu l'arc
-    if (N > 3) { startAngle = Math.PI * 1.1; endAngle = -Math.PI * 0.1; }
+    // Détermination de l'arc de placement en fonction du nombre d'adversaires
+    if (N === 1) { 
+        // Total 2 joueurs : Adversaire en face
+        startAngle = Math.PI * 1.5; 
+        endAngle = Math.PI * 1.5;
+    } else if (N === 2) { 
+        // Total 3 joueurs : Triangle avec nous (Haut-Gauche, Haut-Droite)
+        startAngle = Math.PI * 1.15; 
+        endAngle = Math.PI * 1.85; 
+    } else if (N === 3) { 
+        // Total 4 joueurs : Carré avec nous (Gauche, Haut, Droite)
+        startAngle = Math.PI; 
+        endAngle = Math.PI * 2; 
+    } else { 
+        // Total 5+ joueurs : On utilise un arc plus large qui descend sur les côtés
+        startAngle = Math.PI * 0.9;
+        endAngle = Math.PI * 2.1;
+    }
 
     for (let i = 0; i < N; i++) {
-        let f = (N === 1) ? 0.5 : i / (N - 1);
+        let f = (N === 1) ? 0 : i / (N - 1);
         let angle = startAngle + f * (endAngle - startAngle);
+        
+        // Calcul des coordonnées x et y à partir du centre
         let x = Math.cos(angle) * rx;
         let y = Math.sin(angle) * ry;
 
         let el = oppMats[i];
         el.style.position = 'absolute';
         el.style.left = `calc(50% + ${x}px)`;
-        // -5% pour légèrement remonter le centre de l'arc
-        el.style.top = `calc(45% + ${y}px)`;
+        el.style.top = `calc(50% + ${y}px)`; // Centré par rapport au milieu de l'écran
         el.style.transform = 'translate(-50%, -50%)';
     }
 }
 
+// Recalcule le layout si la taille de la fenêtre change
 window.addEventListener('resize', () => { if(isBoardLayout) updateTableLayout(); });
 
 // --- Helpers ---

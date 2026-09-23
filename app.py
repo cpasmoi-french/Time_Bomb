@@ -88,6 +88,14 @@ def reward_winners(game, winning_team):
                     conn.execute('UPDATE users SET points = points + 1 WHERE username = ?', (username,))
         conn.commit()
 
+def get_winners_data(game, winning_team):
+    target_role = 'Méchant' if winning_team == 'Méchants' else 'Gentil'
+    winners = []
+    for sid, role in game['roles'].items():
+        if role == target_role:
+            winners.append({'name': game['players'][sid], 'role': role})
+    return winners
+
 def generate_room_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
@@ -231,11 +239,11 @@ def on_reveal(data):
 
     if card['type'] == 'Bombe':
         reward_winners(game, 'Méchants')
-        emit('game_over', {'winner': 'Méchants', 'reason': 'La bombe a explosé !'}, to=room)
+        emit('game_over', {'winner': 'Méchants', 'reason': 'La bombe a explosé !', 'winners_list': get_winners_data(game, 'Méchants')}, to=room)
         return
     elif game['cables_found'] >= game['cables_needed']:
         reward_winners(game, 'Gentils')
-        emit('game_over', {'winner': 'Gentils', 'reason': 'Tous les interrupteurs ont été trouvés !'}, to=room)
+        emit('game_over', {'winner': 'Gentils', 'reason': 'Tous les interrupteurs ont été trouvés !', 'winners_list': get_winners_data(game, 'Gentils')}, to=room)
         return
 
     # Fin de manche
@@ -243,9 +251,9 @@ def on_reveal(data):
         game['round'] += 1
         if game['round'] > 4:
             reward_winners(game, 'Méchants')
-            emit('game_over', {'winner': 'Méchants', 'reason': 'Le temps est écoulé !'}, to=room)
+            emit('game_over', {'winner': 'Méchants', 'reason': 'Le temps est écoulé !', 'winners_list': get_winners_data(game, 'Méchants')}, to=room)
         else:
-            game['previous_turn'] = None # RESET DE LA RESTRICTION DE PIOCHE
+            game['previous_turn'] = None
             start_round(room)
             for sid in game['players'].keys():
                 emit('new_round_data', {

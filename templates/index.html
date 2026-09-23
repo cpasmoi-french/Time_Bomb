@@ -16,6 +16,9 @@
     <div id="game-over-screen" class="hidden">
         <h1 id="go-title">Victoire !</h1>
         <p id="go-desc">Raison</p>
+        <!-- NOUVEAU : Zone d'affichage des cartes des vainqueurs -->
+        <div id="go-winners-cards" class="winners-cards-container"></div>
+        
         <div class="go-buttons">
             <button id="btn-replay" onclick="startGame()" style="display:none;">Rejouer</button>
             <button class="btn-alt" onclick="location.reload()">Quitter vers le Menu</button>
@@ -29,14 +32,12 @@
             <p><strong>But du jeu :</strong><br>
             Les <strong>Gentils</strong> (Bleu) doivent trouver tous les câbles de désamorçage (✅) avant la fin de la 4ème manche.<br>
             Les <strong>Méchants</strong> (Rouge) doivent faire exploser la bombe (💣) ou épuiser le temps (fin de la 4ème manche).</p>
-            
             <p><strong>Déroulement :</strong><br>
-            Chaque joueur reçoit des cartes face cachée. Le joueur dont c'est le tour choisit une carte chez un autre joueur pour la révéler. Ce joueur devient le prochain à piocher.<br>
+            Le joueur dont c'est le tour choisit une carte chez un autre joueur pour la révéler. Ce joueur devient le prochain à piocher.<br>
             <span style="color:#e74c3c;">Attention :</span> Sauf au premier tour d'une manche, vous n'avez pas le droit de piocher chez la personne qui vient de piocher chez vous !</p>
-            
             <p><strong>Manches & Annonces :</strong><br>
-            Dès qu'autant de cartes que le nombre de joueurs ont été révélées, la manche se termine. Les cartes restantes sont mélangées et redistribuées.<br>
-            Si l'option est active, chaque manche commence par une phase d'annonce où chaque joueur doit (mentir ou) dire la vérité sur son jeu !</p>
+            Dès qu'autant de cartes que de joueurs ont été révélées, la manche se termine. Les cartes sont redistribuées.<br>
+            Chaque manche commence par une phase d'annonce où chacun déclare son jeu (mensonge autorisé !).</p>
         </div>
         <button onclick="hideRules()">Compris !</button>
     </div>
@@ -65,7 +66,7 @@
             <input type="text" id="playerName" placeholder="Ton Pseudo" required><br>
             <input type="password" id="playerPassword" placeholder="Mot de passe (optionnel)"><br>
             <div style="font-size: 0.85em; margin-bottom: 10px; color: #bdc3c7;">
-                Sans mot de passe = Invité.<br>Avec mot de passe = Connecte ou Crée le compte.
+                Sans mot de passe = Invité.<br>Avec = Connexion/Inscription.
             </div>
             <button onclick="handleLoginAndProceed('host')" style="background-color: #27ae60;">Héberger une partie</button>
             <hr>

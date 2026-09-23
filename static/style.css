@@ -1,7 +1,7 @@
 /* GLOBAL */
 .hidden { display: none !important; }
 body { background: radial-gradient(circle at center, #2c3e50, #1a252f); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; user-select: none; }
-h1 { margin-top: 30px; font-size: 2.8em; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); letter-spacing: 2px; }
+h1 { margin-top: 50px; font-size: 2.8em; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); letter-spacing: 2px; } /* Titre descendu */
 .panel { background: rgba(0, 0, 0, 0.4); padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; margin: 0 auto; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
 .settings { display: flex; flex-direction: column; gap: 10px; text-align: left; margin-bottom: 15px; }
 .settings label { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em; }
@@ -18,7 +18,7 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #btn-shop { background: #f39c12; padding: 5px 15px; border-radius: 20px; font-size: 0.9em; margin-top: 5px; width: auto; }
 #btn-shop:hover { background: #e67e22; }
 
-/* BOUTIQUE */
+/* BOUTIQUE ET SKINS */
 .shop-grid { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
 .shop-item { background: rgba(0,0,0,0.5); border: 2px solid #7f8c8d; border-radius: 10px; padding: 15px; width: 120px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .shop-item .preview-card { width: 60px; height: 90px; border-radius: 8px; border: 2px solid white; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
@@ -48,21 +48,21 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 #top-left-controls { position: fixed; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 10px; }
 #top-left-controls button { width: auto; margin: 0; padding: 8px 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-/* LAYOUTS */
-.layout-grid { display: flex; flex-direction: column; align-items: center; padding-top: 60px; padding-bottom: 120px; gap: 30px; }
+/* LAYOUTS (Remontés) */
+.layout-grid { display: flex; flex-direction: column; align-items: center; padding-top: 10px; padding-bottom: 120px; gap: 30px; } /* padding-top réduit de 60 à 10 */
 .layout-grid #center-table { order: 1; }
 .layout-grid #my-area { order: 2; display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
 .layout-grid #opponents-area { order: 3; display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
 .layout-grid .player-mat.my-mat { border: 2px solid gold; transform: scale(1.05); }
 
-.layout-board { position: relative; height: 100vh; width: 100vw; overflow: hidden; }
+.layout-board { position: relative; height: 100vh; width: 100vw; overflow: hidden; padding-top: 10px; }
 .layout-board #center-table { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
 .layout-board #my-area { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; }
 .layout-board #my-area .player-mat { border: 2px solid gold; background: rgba(0,0,0,0.8); transform: scale(1.1); margin: 0; }
 .layout-board #opponents-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
 .layout-board #opponents-area .player-mat { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; margin: 0; }
 
-/* MODALES (Annonces et Règles) */
+/* MODALES */
 #announcement-modal, #rules-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(44, 62, 80, 0.98); padding: 30px; border-radius: 15px; border: 3px solid #f1c40f; z-index: 6000; box-shadow: 0 10px 40px rgba(0,0,0,0.9); width: 90%; max-width: 500px; }
 #rules-modal { border-color: #8e44ad; }
 #announcement-modal h2 { margin-top: 0; color: #f1c40f; }
@@ -111,6 +111,7 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 .role-back { transform: rotateY(180deg); color: white; font-size: 1.1em; }
 .role-back.Gentil { background: #3498db; } .role-back.Méchant { background: #e74c3c; }
 
+/* CHAT WIDGET */
 #chat-widget { position: fixed; bottom: 20px; left: 20px; z-index: 1000; text-align: left; }
 #chat-toggle { background: #3498db; border-radius: 20px; padding: 10px 20px; font-size: 1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: auto; transition: background 0.3s; }
 #chat-container { width: 300px; height: 400px; background: rgba(30, 40, 50, 0.95); border: 2px solid #3498db; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.7); transition: transform 0.3s; transform-origin: bottom left; margin-top: 10px; }
@@ -124,8 +125,23 @@ hr { border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 
 #toast-msg { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #e74c3c; padding: 10px 20px; border-radius: 5px; z-index: 7000; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.3s; opacity: 1; }
 #toast-msg.hidden { opacity: 0; pointer-events: none; top: -50px; }
+
+/* CARTES DES VAINQUEURS SUR GAME OVER */
 #game-over-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 #game-over-screen.hidden { display: none; } #game-over-screen h1 { font-size: 4em; margin-bottom: 0; color: #f1c40f; }
+.winners-cards-container { display: flex; gap: 20px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+.go-winner-card { display: flex; flex-direction: column; align-items: center; gap: 10px; animation: popIn 0.5s ease forwards; opacity: 0; transform: scale(0.5); }
+.go-winner-card:nth-child(1) { animation-delay: 1.2s; }
+.go-winner-card:nth-child(2) { animation-delay: 1.4s; }
+.go-winner-card:nth-child(3) { animation-delay: 1.6s; }
+.go-winner-card:nth-child(4) { animation-delay: 1.8s; }
+.go-winner-card:nth-child(5) { animation-delay: 2.0s; }
+@keyframes popIn { to { opacity: 1; transform: scale(1); } }
+.role-front-static { width: 80px; height: 120px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; border: 2px solid gold; box-shadow: 0 5px 15px rgba(0,0,0,0.7); font-size: 1.1em; color: white; }
+.role-front-static.Gentil { background: #3498db; }
+.role-front-static.Méchant { background: #e74c3c; }
+.winner-name { font-weight: bold; font-size: 1.2em; color: #ecf0f1; text-shadow: 1px 1px 3px black; }
+
 #explosion-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #fff, #ffeb3b, #f44336, #000); z-index: 4000; display: none; opacity: 0; }
 .explode-anim { animation: explode 1.5s forwards; display: block !important; }
 @keyframes explode { 0% { transform: scale(0.1); opacity: 0.8; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }

@@ -136,12 +136,9 @@ function toggleLayout() {
 function updateTableLayout() {
     const oppMats = document.querySelectorAll('#opponents-area .player-mat');
     if(!isBoardLayout) {
-        oppMats.forEach(el => {
-            el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = '';
-        });
+        oppMats.forEach(el => { el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = ''; });
         return;
     }
-    
     const N = oppMats.length;
     if(N === 0) return;
     
@@ -446,9 +443,6 @@ socket.on('card_revealed', (data) => {
     if(data.card_type === 'Interrupteur') cardEl.classList.add('halo-anim');
     cardEl.classList.add('flipped');
     
-    const bubble = document.getElementById(`bubble-${data.target_sid}`);
-    if (bubble) bubble.classList.add('hidden');
-    
     renderCenterSlots(data.cables_found, data.card_type === 'Bombe');
     updateTurnDisplay(data.next_turn_sid, data.next_turn_name, data.previous_turn);
 });
@@ -469,6 +463,18 @@ socket.on('game_over', (data) => {
         document.getElementById('go-title').style.color = data.winner === 'Méchants' ? '#e74c3c' : '#3498db';
         document.getElementById('go-desc').innerText = data.reason;
         
+        // --- AFFICHAGE DES CARTES DES VAINQUEURS ---
+        const goCardsContainer = document.getElementById('go-winners-cards');
+        goCardsContainer.innerHTML = '';
+        data.winners_list.forEach(w => {
+            goCardsContainer.innerHTML += `
+                <div class="go-winner-card">
+                    <div class="role-front-static ${w.role}">${w.role}</div>
+                    <div class="winner-name">${w.name}</div>
+                </div>
+            `;
+        });
+        
         if (data.winner === 'Méchants' && data.reason.includes('explosé')) {
             document.getElementById('explosion-overlay').classList.add('explode-anim');
             setTimeout(() => goScreen.classList.remove('hidden'), 1000);
@@ -478,6 +484,7 @@ socket.on('game_over', (data) => {
         }
     }, 1000);
 });
+
 socket.on('error', (data) => showToast(data.msg));
 
 // --- Chat ---
